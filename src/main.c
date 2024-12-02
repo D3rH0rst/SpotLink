@@ -100,8 +100,8 @@ int init_main(void) {
     spotify_base = (uint64_t)GetModuleHandle(NULL);
     if (!spotify_base) return 1;
     
-    libcef_base = (uint64_t)GetModuleHandle("libcef.dll");
-    if (!libcef_base) return 1;
+    //libcef_base = (uint64_t)GetModuleHandle("libcef.dll");
+    //if (!libcef_base) return 1;
 
 #ifdef CONSOLE
     if (init_console() != 0) return 1;
@@ -240,10 +240,10 @@ int init_hooks(void) {
     log_msg(LOG_INFO, "Successfully initialized MinHook");
 
 
-    ADD_HOOK(spotify_base + OFFSET_PAUSERESUME_FUNC, hk_pauseresume_func, og_pauseresume_func, "pauseresume_func");
-    ADD_HOOK(spotify_base + OFFSET_PAUSE_FUNC,       hk_pause_func,       og_pause_func,       "pause_func");
-    ADD_HOOK(spotify_base + OFFSET_RESUME_FUNC,      hk_resume_func,      og_resume_func,      "resume_func");
-    ADD_HOOK(spotify_base + OFFSET_PLAY_FUNC,        hk_play_func,        og_play_func,        "play_func");
+    //ADD_HOOK(spotify_base + OFFSET_PAUSERESUME_FUNC, hk_pauseresume_func, og_pauseresume_func, "pauseresume_func");
+    //ADD_HOOK(spotify_base + OFFSET_PAUSE_FUNC,       hk_pause_func,       og_pause_func,       "pause_func");
+    //ADD_HOOK(spotify_base + OFFSET_RESUME_FUNC,      hk_resume_func,      og_resume_func,      "resume_func");
+    //ADD_HOOK(spotify_base + OFFSET_PLAY_FUNC,        hk_play_func,        og_play_func,        "play_func");
 
     for (size_t i = 0; i < hooks_size; i++) {
         CREATE_AND_ENABLE_HOOK(hooks[i]);
