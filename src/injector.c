@@ -4,8 +4,8 @@
 #include <psapi.h>
 #include <TlHelp32.h>
 
-#define TARGET_EXECUTABLE_NAME "Notepad.exe" // "spotify.exe"
-#define TARGET_WNDCLASS_NAME   "Notepad"     // "Chrome_WidgetWin_1"
+#define TARGET_EXECUTABLE_NAME "Spotify.exe"
+#define TARGET_WNDCLASS_NAME   "Chrome_WidgetWin_1"
 #define TARGET_DLL_PATH        ".\\SpotLink.dll"
 
 DWORD GetTargetPID(void);

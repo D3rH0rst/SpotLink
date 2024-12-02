@@ -22,6 +22,8 @@ log_msg(LOG_INFO, "Successfully enabled %s hook at 0x%llx", (hk).name, (hk).addr
 
 #define ADD_HOOK(addr, hf, of, n) hooks[hooks_size++] = (Hook){.address = (addr), .hk_func = (hf), .og_func = (void**)&(of), .name = (n)};
 
+#define MAX_HOOK_COUNT 10
+
 #define BUTTON_PLAY  (1)
 #define BUTTON_PAUSE (2)
 
@@ -40,7 +42,7 @@ const char* logfile_path = "C:\\Programming\\Projects\\SpotLink\\C_DLL\\logfile.
 HWND spotlink_hwnd;
 HWND spotlink_log_hwnd;
 
-Hook hooks[5];
+Hook hooks[MAX_HOOK_COUNT];
 size_t hooks_size;
 
 const char* wndclass_name = "SpotLinkWndClass";
@@ -73,7 +75,6 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
             dll_handle = hinstDLL;
             CreateThread(NULL, 0, Main, NULL, 0, 0);
             break;
-
     }
     return TRUE;
 }
@@ -100,8 +101,8 @@ int init_main(void) {
     spotify_base = (uint64_t)GetModuleHandle(NULL);
     if (!spotify_base) return 1;
     
-    //libcef_base = (uint64_t)GetModuleHandle("libcef.dll");
-    //if (!libcef_base) return 1;
+    libcef_base = (uint64_t)GetModuleHandle("libcef.dll");
+    if (!libcef_base) return 1;
 
 #ifdef CONSOLE
     if (init_console() != 0) return 1;
@@ -244,6 +245,20 @@ int init_hooks(void) {
     //ADD_HOOK(spotify_base + OFFSET_PAUSE_FUNC,       hk_pause_func,       og_pause_func,       "pause_func");
     //ADD_HOOK(spotify_base + OFFSET_RESUME_FUNC,      hk_resume_func,      og_resume_func,      "resume_func");
     //ADD_HOOK(spotify_base + OFFSET_PLAY_FUNC,        hk_play_func,        og_play_func,        "play_func");
+    //ADD_HOOK(spotify_base + OFFSET_TOGGLE_PAUSE_FUNC,hk_toggle_pause_func,og_toggle_pause_func,"toggle_pause_func");
+    //ADD_HOOK(spotify_base + OFFSET_TOGGLE_PLAY_FUNC, hk_toggle_play_func, og_toggle_play_func, "toggle_play_func");
+    //ADD_HOOK(spotify_base + OFFSET_CHECK_PARAM_HOOK, hk_check_param_hook, og_check_param_hook, "check_param_func");
+    //ADD_HOOK(spotify_base + OFFSET_SET_PAUSE_FUNC,   hk_set_pause_func, og_set_pause_func, "set_pause_func");
+    //ADD_HOOK(spotify_base + OFFSET_SET_PLAY_FUNC,   hk_set_play_func, og_set_play_func, "set_play_func");
+    //ADD_HOOK(spotify_base + OFFSET_NEXT_PAUSE_FUNC,   hk_next_pause_func, og_next_pause_func, "next_pause_func");
+    //ADD_HOOK(spotify_base + OFFSET_NEXT_PLAY_FUNC,   hk_next_play_func, og_next_play_func, "next_play_func");
+    //ADD_HOOK(spotify_base + OFFSET_1_PAUSE_FUNC,   hk_1_pause_func, og_1_pause_func, "1_pause_func");
+    //ADD_HOOK(spotify_base + OFFSET_1_PLAY_FUNC,   hk_1_play_func, og_1_play_func, "1_play_func");
+    ADD_HOOK(spotify_base + OFFSET_2_PAUSE_FUNC,   hk_2_pause_func, og_2_pause_func, "2_pause_func");
+    ADD_HOOK(spotify_base + OFFSET_2_PLAY_FUNC,   hk_2_play_func, og_2_play_func, "2_play_func");
+    ADD_HOOK(spotify_base + OFFSET_MEDIA_PAUSE_PLAY_FUNC,   hk_media_pause_play_func, og_media_pause_play_func, "media_pause_play_func");
+    
+    //log_msg(LOG_INFO, "og_1_pause_func: 0x%p", og_1_pause_func);
 
     for (size_t i = 0; i < hooks_size; i++) {
         CREATE_AND_ENABLE_HOOK(hooks[i]);
