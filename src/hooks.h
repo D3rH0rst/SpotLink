@@ -81,11 +81,68 @@ extern int64_t*(__fastcall *og_2_play_func)(int64_t a1, int64_t *a2, int64_t a3,
 int64_t* __fastcall hk_2_play_func(int64_t a1, int64_t *a2, int64_t a3, int64_t *a4);
 
 // this function is interesting,
-// if the play/pause button in the spotify UI is pressed, 1_pause_func gets called by 2_pause_func.
-// however, if its played/paused by the media key, this function gets called.
+// if the play/pause button in the spotify UI is pressed, `1_pause_func` gets called by `2_pause_func`.
+// however, if its played/paused by the media key, this function calls `1_pause_func`.
 // this function gets called in both cases, resuming and pausing, unlike most of the other ones.
-#define OFFSET_MEDIA_PAUSE_PLAY_FUNC 0x15A1C4
+// It also gets called on the media keys for skip to next song and go back a song, however with a different second param
+// (pause/resume => a2 = 0, forward => a2 = 6, backward => a2 = 7)
+#define OFFSET_MEDIAKEY_CTRL_FUNC 0x15A1C4
 //void __fastcall sub_14015A1C4(__int64 **a1, int a2)
-extern void(__fastcall *og_media_pause_play_func)(int64_t **a1, int a2);
-void __fastcall hk_media_pause_play_func(int64_t **a1, int a2);
+extern void(__fastcall *og_mediakey_ctrl_func)(int64_t **a1, int a2);
+void __fastcall hk_mediakey_ctrl_func(int64_t **a1, int a2);
+
+
+// this function handles both pause, play, and forward, backwards. arguments and returns are always the exact same.
+// it also gets called when clicking play on a new song, intersting.
+// seeking also gets handled by it
+#define OFFSET_3_PAUSE_PLAY_FUNC 0x4F1B50
+//void *__fastcall sub_1404F1B50(_QWORD *a1, void *a2, size_t *a3, __int64 a4)
+extern void*(__fastcall *og_3_pause_play_func)(uint64_t *a1, void *a2, size_t *a3, int64_t a4);
+void* __fastcall hk_3_pause_play_func(uint64_t *a1, void *a2, size_t *a3, int64_t a4);
+
+// also gets called on pause/play/seek, gets called multiple times on song switch,
+// sometimes gets called randomly once
+// arguments always the same
+#define OFFSET_4_PAUSE_PLAY_FUNC 0xFD5CD4
+//void *__fastcall sub_140FD5CD4(__int64 a1, void *a2, _QWORD *a3, __int64 a4)
+extern void*(__fastcall *og_4_pause_play_func)(int64_t a1, void *a2, uint64_t *a3, int64_t a4);
+void* __fastcall hk_4_pause_play_func(int64_t a1, void *a2, uint64_t *a3, int64_t a4);
+
+// also get called on pause/play/seek, and multiple (7) times on song switch
+// the third argument, a3, seems to be some sort of counter, gets incremented by one every time the function gets called
+// gets called when the window is focused too, a bit annoying
+#define OFFSET_5_PAUSE_PLAY_FUNC 0xBB2FBC
+//char __fastcall sub_140BB2FBC(__int64 a1, __int64 a2, __int64 a3, char a4, __int64 a5)
+extern char(__fastcall *og_5_pause_play_func)(int64_t a1, int64_t a2, int64_t a3, char a4, int64_t a5);
+char __fastcall hk_5_pause_play_func(int64_t a1, int64_t a2, int64_t a3, char a4, int64_t a5);
+
+//  this function always calls the above function, with the same counter and just slightly offset args
+#define OFFSET_6_PAUSE_PLAY_FUNC 0xBB20E4
+//__int64 __fastcall sub_140BB20E4(__int64 a1, __int64 a2, __int64 a3, char a4, _QWORD *a5)
+extern int64_t(__fastcall *og_6_pause_play_func)(int64_t a1, int64_t a2, int64_t a3, char a4, uint64_t *a5);
+int64_t __fastcall hk_6_pause_play_func(int64_t a1, int64_t a2, int64_t a3, char a4, uint64_t *a5);
+
+#define OFFSET_7_PAUSE_PLAY_FUNC 0xBB2990
+//__int64 __fastcall sub_140BB2990(__int64 a1)
+extern int64_t(__fastcall *og_7_pause_play_func)(int64_t a1);
+int64_t __fastcall hk_7_pause_play_func(int64_t a1);
+
+// this function gets called a bunch of times on each track action, even tuning audio
+// also gets called on media keys, interesting
+// seems to be a general event handler, gets called on everyting i do
+// first arg always the same, second arg differs.
+#define OFFSET_8_PAUSE_PLAY_FUNC 0xCFD348
+//__int64 __fastcall sub_140CFD348(__int64 a1, __int64 a2)
+extern int64_t(__fastcall *og_8_pause_play_func)(int64_t a1, int64_t a2);
+int64_t __fastcall hk_8_pause_play_func(int64_t a1, int64_t a2);
+
+
+extern LONG is_critical; // needed as its a function with EnterCriticalSection
+// looks like a message handler, gets called very often, on every event that happend (window move etc)
+#define OFFSET_9_PAUSE_PLAY_FUNC 0x25145C
+//__int64 __fastcall sub_14025145C(__int64 a1, DWORD a2, __int64 a3, __int64 a4)
+extern int64_t(__fastcall *og_9_pause_play_func)(int64_t a1, uint32_t a2, int64_t a3, int64_t a4);
+int64_t __fastcall hk_9_pause_play_func(int64_t a1, uint32_t a2, int64_t a3, int64_t a4);
+
+
 

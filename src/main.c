@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <Windows.h>
+#include <TlHelp32.h>
+
 #include "logging.h"
 
 #include "MinHook.h"
@@ -41,6 +43,7 @@ const char* logfile_path = "C:\\Programming\\Projects\\SpotLink\\C_DLL\\logfile.
 
 HWND spotlink_hwnd;
 HWND spotlink_log_hwnd;
+HWND debug_label_hwnd;
 
 Hook hooks[MAX_HOOK_COUNT];
 size_t hooks_size;
@@ -65,6 +68,9 @@ int init_hooks(void);
 int main_loop(void);
 void cleanup(void);
 DWORD WINAPI EjectThread(LPVOID lpParameter);
+
+void SuspendAllThreadsExceptCurrent(void);
+void ResumeAllThreads(void);
 
 LRESULT CALLBACK SpotLinkWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
@@ -194,7 +200,9 @@ int init_ui(HWND hwnd) {
         log_msg(LOG_ERROR, "Failed to init logging window: %ld", GetLastError());
         return 1;
     }
-    set_log_window(spotlink_log_hwnd);
+    SendMessage(spotlink_log_hwnd, EM_LIMITTEXT, (WPARAM)MAX_EDIT_BUFFER_SIZE, 0);
+
+    set_log_window(&spotlink_log_hwnd);
 
     CreateWindow(
         "Button",
@@ -215,6 +223,18 @@ int init_ui(HWND hwnd) {
         hwnd,
         (HMENU)BUTTON_PAUSE, NULL, NULL
     );
+
+    debug_label_hwnd = CreateWindow(
+        "Static",
+        "DebugLog length: 0",
+        WS_VISIBLE | WS_CHILD,
+        200, 50,
+        200, 30,
+        hwnd, NULL,
+        NULL, NULL
+    );
+
+    set_debug_label(&debug_label_hwnd);
 
     return 0;
 }
@@ -254,9 +274,16 @@ int init_hooks(void) {
     //ADD_HOOK(spotify_base + OFFSET_NEXT_PLAY_FUNC,   hk_next_play_func, og_next_play_func, "next_play_func");
     //ADD_HOOK(spotify_base + OFFSET_1_PAUSE_FUNC,   hk_1_pause_func, og_1_pause_func, "1_pause_func");
     //ADD_HOOK(spotify_base + OFFSET_1_PLAY_FUNC,   hk_1_play_func, og_1_play_func, "1_play_func");
-    ADD_HOOK(spotify_base + OFFSET_2_PAUSE_FUNC,   hk_2_pause_func, og_2_pause_func, "2_pause_func");
-    ADD_HOOK(spotify_base + OFFSET_2_PLAY_FUNC,   hk_2_play_func, og_2_play_func, "2_play_func");
-    ADD_HOOK(spotify_base + OFFSET_MEDIA_PAUSE_PLAY_FUNC,   hk_media_pause_play_func, og_media_pause_play_func, "media_pause_play_func");
+    //ADD_HOOK(spotify_base + OFFSET_2_PAUSE_FUNC,   hk_2_pause_func, og_2_pause_func, "2_pause_func");
+    //ADD_HOOK(spotify_base + OFFSET_2_PLAY_FUNC,   hk_2_play_func, og_2_play_func, "2_play_func");
+    ADD_HOOK(spotify_base + OFFSET_MEDIAKEY_CTRL_FUNC, hk_mediakey_ctrl_func, og_mediakey_ctrl_func, "mediakey_ctrl_func");
+    //ADD_HOOK(spotify_base + OFFSET_3_PAUSE_PLAY_FUNC,   hk_3_pause_play_func, og_3_pause_play_func, "3_pause_play_func");
+    //ADD_HOOK(spotify_base + OFFSET_4_PAUSE_PLAY_FUNC,   hk_4_pause_play_func, og_4_pause_play_func, "4_pause_play_func");
+    //ADD_HOOK(spotify_base + OFFSET_5_PAUSE_PLAY_FUNC,   hk_5_pause_play_func, og_5_pause_play_func, "5_pause_play_func");
+    //ADD_HOOK(spotify_base + OFFSET_6_PAUSE_PLAY_FUNC,   hk_6_pause_play_func, og_6_pause_play_func, "6_pause_play_func");
+    //ADD_HOOK(spotify_base + OFFSET_7_PAUSE_PLAY_FUNC,   hk_7_pause_play_func, og_7_pause_play_func, "7_pause_play_func");
+    //ADD_HOOK(spotify_base + OFFSET_8_PAUSE_PLAY_FUNC,   hk_8_pause_play_func, og_8_pause_play_func, "8_pause_play_func");
+    ADD_HOOK(spotify_base + OFFSET_9_PAUSE_PLAY_FUNC,   hk_9_pause_play_func, og_9_pause_play_func, "9_pause_play_func");
     
     //log_msg(LOG_INFO, "og_1_pause_func: 0x%p", og_1_pause_func);
 
@@ -283,6 +310,7 @@ void cleanup(void) {
         DestroyWindow(spotlink_hwnd);
     UnregisterClass(wndclass_name, (HINSTANCE)spotify_base);
 
+
 #ifdef CONSOLE
     if (console) {
         fclose(console);
@@ -295,6 +323,12 @@ void cleanup(void) {
         fclose(logfile);
 #endif
 
+    //log_msg(LOG_INFO, "");
+
+    while (InterlockedCompareExchange(&is_critical, 0, 0) != 0); // wait until critical section is done
+    
+    SuspendAllThreadsExceptCurrent();
+
     for (size_t i = 0; i < hooks_size; i++) {
         if (hooks[i].enabled)
             MH_DisableHook((LPVOID)(hooks[i].address));
@@ -302,6 +336,8 @@ void cleanup(void) {
         if (hooks[i].created)
             MH_RemoveHook((LPVOID)(hooks[i].address));
     }
+
+    ResumeAllThreads();
 
     MH_Uninitialize();
 
@@ -334,9 +370,55 @@ LRESULT CALLBACK SpotLinkWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
             break;
         }
         break;
+    default:
+        break;
     case WM_CLOSE:
         PostQuitMessage(0);
         return 0;
     }
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
+}
+
+void SuspendAllThreadsExceptCurrent(void) {
+    HANDLE hProcess = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+    THREADENTRY32 te32;
+    te32.dwSize = sizeof(THREADENTRY32);
+
+    DWORD our_pid = GetCurrentProcessId();
+    DWORD our_tid = GetCurrentThreadId();
+
+    if (Thread32First(hProcess, &te32)) {
+        do {
+            if (te32.th32OwnerProcessID == our_pid && te32.th32ThreadID != our_tid) {
+                HANDLE hThread = OpenThread(THREAD_SUSPEND_RESUME, FALSE, te32.th32ThreadID);
+                if (hThread) {
+                    SuspendThread(hThread);
+                    CloseHandle(hThread);
+                }
+            }
+        } while (Thread32Next(hProcess, &te32));
+    }
+    CloseHandle(hProcess);
+}
+
+void ResumeAllThreads(void) {
+    HANDLE hProcess = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+    THREADENTRY32 te32;
+    te32.dwSize = sizeof(THREADENTRY32);
+
+    DWORD our_pid = GetCurrentProcessId();
+    DWORD our_tid = GetCurrentThreadId();
+
+    if (Thread32First(hProcess, &te32)) {
+        do {
+            if (te32.th32OwnerProcessID == our_pid && te32.th32ThreadID != our_tid) {
+                HANDLE hThread = OpenThread(THREAD_SUSPEND_RESUME, FALSE, te32.th32ThreadID);
+                if (hThread) {
+                    ResumeThread(hThread);
+                    CloseHandle(hThread);
+                }
+            }
+        } while (Thread32Next(hProcess, &te32));
+    }
+    CloseHandle(hProcess);
 }
