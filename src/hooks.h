@@ -10,6 +10,7 @@ typedef struct {
 } Hook;
 
 extern uint64_t spotify_base;
+extern uint64_t libcef_base;
 
 #define OFFSET_PAUSERESUME_FUNC 0x1B33C8
 //char __fastcall sub_1401B33C8(__int64 a1, unsigned __int8 a2, __int64 a3)

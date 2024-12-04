@@ -10,7 +10,7 @@ set "Outputfile=./build/SpotLink.dll"
 set "Includepaths=-I./include"
 set "Inputfiles=./src/main.c ./src/logging.c ./src/hooks.c"
 set "Linkerpaths=-L./lib"
-set "Linkerflags=-lminhook"
+set "Linkerflags=-lminhook -lDbghelp"
 
 :: Parse command-line arguments for -D flags
 set "Defines="
