@@ -9,6 +9,7 @@ typedef struct {
 	char created;
 } Hook;
 
+extern uint64_t spotify_base;
 
 #define OFFSET_PAUSERESUME_FUNC 0x1B33C8
 //char __fastcall sub_1401B33C8(__int64 a1, unsigned __int8 a2, __int64 a3)
@@ -137,7 +138,7 @@ extern int64_t(__fastcall *og_8_pause_play_func)(int64_t a1, int64_t a2);
 int64_t __fastcall hk_8_pause_play_func(int64_t a1, int64_t a2);
 
 
-extern LONG is_critical; // needed as its a function with EnterCriticalSection
+extern char is_critical; // needed as its a function with EnterCriticalSection
 // looks like a message handler, gets called very often, on every event that happend (window move etc)
 #define OFFSET_9_PAUSE_PLAY_FUNC 0x25145C
 //__int64 __fastcall sub_14025145C(__int64 a1, DWORD a2, __int64 a3, __int64 a4)
@@ -145,4 +146,19 @@ extern int64_t(__fastcall *og_9_pause_play_func)(int64_t a1, uint32_t a2, int64_
 int64_t __fastcall hk_9_pause_play_func(int64_t a1, uint32_t a2, int64_t a3, int64_t a4);
 
 
+//__int64 __fastcall sub_140252C08(__int64 a1, _OWORD *a2) // next function in line...
 
+#define OFFSET_2_MEDIA_FUNC 0x14D158
+//void __fastcall sub_14014D158(__int64 ***a1, int a2) // mediafunc2
+extern void(__fastcall *og_2_media_func)(int64_t ***a1, int a2);
+void __fastcall hk_2_media_func(int64_t ***a1, int a2);
+
+#define OFFSET_3_MEDIA_FUNC 0xF3D3C
+//void __fastcall sub_1400F3D3C(__int64 a1)
+extern void(__fastcall *og_3_media_func)(int64_t a1);
+void __fastcall hk_3_media_func(int64_t a1);
+
+#define OFFSET_4_MEDIA_FUNC 0x1359D08
+//__int64 __fastcall sub_141359D08(__int64 a1) 3_media_func gets called by this on PAUSE press
+extern int64_t(__fastcall *og_4_media_func)(int64_t a1);
+int64_t __fastcall hk_4_media_func(int64_t a1);

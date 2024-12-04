@@ -41,7 +41,6 @@ if errorlevel 1 (
     echo Build Failed %date% %time:~0,8%
 ) else (
     echo Build Complete %date% %time:~0,8%
-    ::%PWS% -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut(%Shortcut%); $S.TargetPath = %Linktarget%; $S.Save()"
 )
 echo -------------------------------------
 echo.

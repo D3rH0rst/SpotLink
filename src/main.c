@@ -246,7 +246,11 @@ int init_logfile(void) {
         log_msg(LOG_ERROR, "Failed to open logfile at path %s", logfile_path);
         return 1;
     }
+    
+    //setvbuf(logfile, NULL, _IONBF, 0);  // Disable buffering
+    
     set_log_file(logfile);
+    
     return 0;
 }
 #endif
@@ -276,16 +280,22 @@ int init_hooks(void) {
     //ADD_HOOK(spotify_base + OFFSET_1_PLAY_FUNC,   hk_1_play_func, og_1_play_func, "1_play_func");
     //ADD_HOOK(spotify_base + OFFSET_2_PAUSE_FUNC,   hk_2_pause_func, og_2_pause_func, "2_pause_func");
     //ADD_HOOK(spotify_base + OFFSET_2_PLAY_FUNC,   hk_2_play_func, og_2_play_func, "2_play_func");
-    ADD_HOOK(spotify_base + OFFSET_MEDIAKEY_CTRL_FUNC, hk_mediakey_ctrl_func, og_mediakey_ctrl_func, "mediakey_ctrl_func");
+    
+    //ADD_HOOK(spotify_base + OFFSET_MEDIAKEY_CTRL_FUNC, hk_mediakey_ctrl_func, og_mediakey_ctrl_func, "mediakey_ctrl_func");
+    
     //ADD_HOOK(spotify_base + OFFSET_3_PAUSE_PLAY_FUNC,   hk_3_pause_play_func, og_3_pause_play_func, "3_pause_play_func");
     //ADD_HOOK(spotify_base + OFFSET_4_PAUSE_PLAY_FUNC,   hk_4_pause_play_func, og_4_pause_play_func, "4_pause_play_func");
     //ADD_HOOK(spotify_base + OFFSET_5_PAUSE_PLAY_FUNC,   hk_5_pause_play_func, og_5_pause_play_func, "5_pause_play_func");
     //ADD_HOOK(spotify_base + OFFSET_6_PAUSE_PLAY_FUNC,   hk_6_pause_play_func, og_6_pause_play_func, "6_pause_play_func");
     //ADD_HOOK(spotify_base + OFFSET_7_PAUSE_PLAY_FUNC,   hk_7_pause_play_func, og_7_pause_play_func, "7_pause_play_func");
     //ADD_HOOK(spotify_base + OFFSET_8_PAUSE_PLAY_FUNC,   hk_8_pause_play_func, og_8_pause_play_func, "8_pause_play_func");
-    ADD_HOOK(spotify_base + OFFSET_9_PAUSE_PLAY_FUNC,   hk_9_pause_play_func, og_9_pause_play_func, "9_pause_play_func");
+    //ADD_HOOK(spotify_base + OFFSET_9_PAUSE_PLAY_FUNC,   hk_9_pause_play_func, og_9_pause_play_func, "9_pause_play_func"); crashes on unload
     
-    //log_msg(LOG_INFO, "og_1_pause_func: 0x%p", og_1_pause_func);
+    //ADD_HOOK(spotify_base + OFFSET_2_MEDIA_FUNC,   hk_2_media_func, og_2_media_func, "2_media_func");
+    ADD_HOOK(spotify_base + OFFSET_3_MEDIA_FUNC,   hk_3_media_func, og_3_media_func, "3_media_func");
+    ADD_HOOK(spotify_base + OFFSET_4_MEDIA_FUNC,   hk_4_media_func, og_4_media_func, "4_media_func");
+    
+    
 
     for (size_t i = 0; i < hooks_size; i++) {
         CREATE_AND_ENABLE_HOOK(hooks[i]);
@@ -325,21 +335,27 @@ void cleanup(void) {
 
     //log_msg(LOG_INFO, "");
 
-    while (InterlockedCompareExchange(&is_critical, 0, 0) != 0); // wait until critical section is done
+    //while (InterlockedCompareExchange(&is_critical, 0, 0) != 0); // wait until critical section is done
     
-    SuspendAllThreadsExceptCurrent();
+    //SuspendAllThreadsExceptCurrent();
 
     for (size_t i = 0; i < hooks_size; i++) {
+        
+        //EnterCriticalSection((LPCRITICAL_SECTION)hooks[i].address);
+        //is_critical = 1;
         if (hooks[i].enabled)
             MH_DisableHook((LPVOID)(hooks[i].address));
         
         if (hooks[i].created)
             MH_RemoveHook((LPVOID)(hooks[i].address));
+        //is_critical = 0;
+        //LeaveCriticalSection((LPCRITICAL_SECTION)hooks[i].address);
     }
 
-    ResumeAllThreads();
+    //ResumeAllThreads();
 
     MH_Uninitialize();
+
 
     CreateThread(NULL, 0, EjectThread, NULL, 0, NULL);
 }

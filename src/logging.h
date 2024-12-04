@@ -14,9 +14,12 @@ enum LogLevel {
 	LOG_NOLEVEL
 };
 
+
+
 void log_msg(int level, const char* msg, ...);
 void log_sep(void);
 void set_log_window(HWND *window);
 void set_log_file(FILE* file);
 void set_debug_label(HWND *label);
+void set_log_mutex(HANDLE *mutex);
 #endif // INCLUDE_LOGGING_H

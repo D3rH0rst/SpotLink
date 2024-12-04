@@ -22,6 +22,7 @@ void log_msg(int level, const char* text, ...) {
 	va_start(args, text);
 
 	char buffer[MAX_LOG_MSG_LENGTH] = { 0 };
+
 	switch (level) {
 		case LOG_INFO:    strcpy(buffer, "INFO: ");    break;
 		case LOG_WARNING: strcpy(buffer, "WARNING: "); break;
@@ -71,6 +72,7 @@ void log_msg(int level, const char* text, ...) {
 #ifdef CONSOLE
 	printf("%s", formatted_message);
 #endif
+
 	va_end(args);
 }
 
@@ -79,5 +81,5 @@ void log_sep(void) {
 }
 
 void set_log_window(HWND *window) { log_window = window; }
-void set_log_file(FILE* file) { log_file = file; }
-void set_debug_label(HWND * label) { debug_label = label; }
+void set_log_file(FILE* file)     { log_file = file; }
+void set_debug_label(HWND *label) { debug_label = label; }
