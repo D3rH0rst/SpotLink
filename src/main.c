@@ -95,6 +95,10 @@ DWORD WINAPI Main(LPVOID lpParameter) {
     log_msg(LOG_INFO, "Successfully initialized everything");
     log_msg(LOG_INFO, "spotify.exe Base Address: 0x%llx", spotify_base);
     log_msg(LOG_INFO, "libcef.dll  Base Address: 0x%llx", libcef_base);
+    
+    log_msg(LOG_DEBUG, "hk_1_arg addr: 0x%llX", (uint64_t)hk_1_arg);
+    log_msg(LOG_DEBUG, "log_sep  addr: 0x%llX", (uint64_t)log_sep);
+
     log_sep();
 
     int ret = main_loop();

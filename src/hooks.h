@@ -76,8 +76,8 @@ int64_t __fastcall hk_5_pause(int64_t a1, int64_t a2, int64_t a3);
 #define OFFSET_SONG     0x581FFD //sub_140581DE4
 #define OFFSET_REPEAT   0x5858D7 //sub_1405857C4
 #define OFFSET_SHUFFLE1 0x5863F6 //sub_1405862E4
-#define OFFSET_SHUFFLE1 0x587F72 //sub_140587DC0
+#define OFFSET_SHUFFLE2 0x587F72 //sub_140587DC0
 
-
+int64_t __fastcall hk_1_arg(int64_t a1);
 
 #endif // INCLUDE_HOOKS_H

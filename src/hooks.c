@@ -114,3 +114,106 @@ int64_t __fastcall hk_5_pause(int64_t a1, int64_t a2, int64_t a3) {
 	log_sep();
 	return ret;
 }
+
+
+// sample functions
+
+
+int64_t(__fastcall *og_0_arg)(void) = NULL;
+int64_t __fastcall hk_0_arg(void) {
+	log_sep();
+	log_msg(LOG_INFO, "Called `int64_t hk_0_arg(void)`");
+	print_caller();
+	int64_t ret = og_0_arg();
+	log_msg(LOG_INFO, "ret = 0x%llX", ret);
+	log_sep();
+	return ret;
+}
+
+int64_t(__fastcall *og_1_arg)(int64_t a1) = NULL;
+int64_t __fastcall hk_1_arg(int64_t a1) {
+	log_sep();
+	log_msg(LOG_INFO, "Called `int64_t hk_1_arg(0x%llX)`", a1);
+	print_caller();
+	int64_t ret = og_1_arg(a1);
+	log_msg(LOG_INFO, "ret = 0x%llX", ret);
+	log_sep();
+	return ret;
+}
+
+int64_t(__fastcall *og_2_arg)(int64_t a1, int64_t a2) = NULL;
+int64_t __fastcall hk_2_arg(int64_t a1, int64_t a2) {
+	log_sep();
+	log_msg(LOG_INFO, "Called `int64_t hk_2_arg(0x%llX, 0x%llX)`", a1, a2);
+	print_caller();
+	int64_t ret = og_2_arg(a1, a2);
+	log_msg(LOG_INFO, "ret = 0x%llX", ret);
+	log_sep();
+	return ret;
+}
+
+int64_t(__fastcall *og_3_arg)(int64_t a1, int64_t a2, int64_t a3) = NULL;
+int64_t __fastcall hk_3_arg(int64_t a1, int64_t a2, int64_t a3) {
+	log_sep();
+	log_msg(LOG_INFO, "Called `int64_t hk_2_arg(0x%llX, 0x%llX, 0x%llX)`", a1, a2, a3);
+	print_caller();
+	int64_t ret = og_3_arg(a1, a2, a3);
+	log_msg(LOG_INFO, "ret = 0x%llX", ret);
+	log_sep();
+	return ret;
+}
+
+int64_t(__fastcall *og_4_arg)(int64_t a1, int64_t a2, int64_t a3, int64_t a4) = NULL;
+int64_t __fastcall hk_4_arg(int64_t a1, int64_t a2, int64_t a3, int64_t a4) {
+	log_sep();
+	log_msg(LOG_INFO, "Called `int64_t hk_4_arg(0x%llX, 0x%llX, 0x%llX, 0x%llX)`", a1, a2, a3, a4);
+	print_caller();
+	int64_t ret = og_4_arg(a1, a2, a3, a4);
+	log_msg(LOG_INFO, "ret = 0x%llX", ret);
+	log_sep();
+	return ret;
+}
+
+int64_t(__fastcall *og_5_arg)(int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5) = NULL;
+int64_t __fastcall hk_5_arg(int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5) {
+	log_sep();
+	log_msg(LOG_INFO, "Called `int64_t hk_5_arg(0x%llX, 0x%llX, 0x%llX, 0x%llX, 0x%llX)`", a1, a2, a3, a4, a5);
+	print_caller();
+	int64_t ret = og_5_arg(a1, a2, a3, a4, a5);
+	log_msg(LOG_INFO, "ret = 0x%llX", ret);
+	log_sep();
+	return ret;
+}
+
+int64_t(__fastcall *og_6_arg)(int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6) = NULL;
+int64_t __fastcall hk_6_arg(int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6) {
+	log_sep();
+	log_msg(LOG_INFO, "Called `int64_t hk_6_arg(0x%llX, 0x%llX, 0x%llX, 0x%llX, 0x%llX, 0x%llX)`", a1, a2, a3, a4, a5, a6);
+	print_caller();
+	int64_t ret = og_6_arg(a1, a2, a3, a4, a5, a6);
+	log_msg(LOG_INFO, "ret = 0x%llX", ret);
+	log_sep();
+	return ret;
+}
+
+int64_t(__fastcall *og_7_arg)(int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7) = NULL;
+int64_t __fastcall hk_7_arg(int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7) {
+	log_sep();
+	log_msg(LOG_INFO, "Called `int64_t hk_7_arg(0x%llX, 0x%llX, 0x%llX, 0x%llX, 0x%llX, 0x%llX, 0x%llX)`", a1, a2, a3, a4, a5, a6, a7);
+	print_caller();
+	int64_t ret = og_7_arg(a1, a2, a3, a4, a5, a6, a7);
+	log_msg(LOG_INFO, "ret = 0x%llX", ret);
+	log_sep();
+	return ret;
+}
+
+int64_t(__fastcall *og_8_arg)(int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8) = NULL;
+int64_t __fastcall hk_8_arg(int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8) {
+	log_sep();
+	log_msg(LOG_INFO, "Called `int64_t hk_8_arg(0x%llX, 0x%llX, 0x%llX, 0x%llX, 0x%llX, 0x%llX, 0x%llX, 0x%llX)`", a1, a2, a3, a4, a5, a6, a7, a8);
+	print_caller();
+	int64_t ret = og_8_arg(a1, a2, a3, a4, a5, a6, a7, a8);
+	log_msg(LOG_INFO, "ret = 0x%llX", ret);
+	log_sep();
+	return ret;
+}

@@ -5,7 +5,7 @@ if not exist build\ (
 setlocal enabledelayedexpansion
 set "Compiler=gcc"
 set "Wflags=-Wall -Wextra"
-set "Buildflags=-shared -fPIC -g" :: debug symbols -g
+set "Buildflags=-shared -fPIC" :: debug symbols -g
 set "Outputfile=./build/SpotLink.dll"
 set "Includepaths=-I./include"
 set "Inputfiles=./src/main.c ./src/logging.c ./src/hooks.c"
