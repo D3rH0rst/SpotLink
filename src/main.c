@@ -1,30 +1,19 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <time.h>
 #include <Windows.h>
 #include <TlHelp32.h>
 
 #include "logging.h"
 
 #include "MinHook.h"
-#include "hooks.h"
 
-#define CREATE_AND_ENABLE_HOOK(hk)                                                                                                  \
-if ((status = MH_CreateHook((LPVOID)((hk).address), (hk).hk_func, (LPVOID*)((hk).og_func))) != MH_OK) {                             \
-    log_msg(LOG_ERROR, "Error creating %s hook at 0x%llx: %s", (hk).name, (hk).address, MH_StatusToString(status));                 \
-    return 1;                                                                                                                       \
-}                                                                                                                                   \
-(hk).created = 1;                                                                                                                   \
-log_msg(LOG_INFO, "Successfully created %s hook at 0x%llx (og_%s at 0x%llx)", (hk).name, (hk).address, (hk).name, *((hk).og_func)); \
-if ((status = MH_EnableHook((LPVOID)((hk).address))) != MH_OK) {                                                                    \
-    log_msg(LOG_ERROR, "Error enabling %s hook at 0x%llx: %s", (hk).name, (hk).address, MH_StatusToString(status));                 \
-    return 1;                                                                                                                       \
-}                                                                                                                                   \
-(hk).enabled = 1;                                                                                                                   \
-log_msg(LOG_INFO, "Successfully enabled %s hook at 0x%llx", (hk).name, (hk).address);
+#include "hooking.h"
+#include "hookfuncs.h"
 
-#define ADD_HOOK(addr, hf, of, n) hooks[hooks_size++] = (Hook){.address = (addr), .hk_func = (hf), .og_func = (void**)&(of), .name = (n)};
+#include "sigscanner.h"
 
-#define MAX_HOOK_COUNT 10
+#include <Win32CustomControls/CustomControls.h>
 
 #define BUTTON_PLAY  (1)
 #define BUTTON_PAUSE (2)
@@ -46,12 +35,11 @@ HWND spotlink_hwnd;
 HWND spotlink_log_hwnd;
 HWND debug_label_hwnd;
 
-Hook hooks[MAX_HOOK_COUNT];
-size_t hooks_size;
+Accordion *accordion;
 
 const char* wndclass_name = "SpotLinkWndClass";
-const int window_width = 800;
-const int window_height = 600;
+const int window_width = 1280;
+const int window_height = 720;
 
 DWORD WINAPI Main(LPVOID lpParameter);
 
@@ -63,6 +51,7 @@ int init_console(void);
 int init_logfile(void);
 #endif
 int init_window();
+void log_msg_wrapper(const char *format, ...);
 int init_ui(HWND hwnd);
 int init_hooks(void);
 
@@ -95,10 +84,6 @@ DWORD WINAPI Main(LPVOID lpParameter) {
     log_msg(LOG_INFO, "Successfully initialized everything");
     log_msg(LOG_INFO, "spotify.exe Base Address: 0x%llx", spotify_base);
     log_msg(LOG_INFO, "libcef.dll  Base Address: 0x%llx", libcef_base);
-    
-    log_msg(LOG_DEBUG, "hk_1_arg addr: 0x%llX", (uint64_t)hk_1_arg);
-    log_msg(LOG_DEBUG, "log_sep  addr: 0x%llX", (uint64_t)log_sep);
-
     log_sep();
 
     int ret = main_loop();
@@ -119,11 +104,13 @@ int init_main(void) {
     if (init_console() != 0) return 1;
 #endif
 
-    if (init_window() != 0) return 1;
-
 #ifdef LOGFILE
     if (init_logfile() != 0) return 1;
 #endif
+
+    if (CustomControlsInit((HINSTANCE)spotify_base, log_msg_wrapper) != 0) return 1;
+
+    if (init_window() != 0) return 1;
 
     if (init_hooks() != 0) return 1;
 
@@ -172,7 +159,7 @@ int init_window(void) {
     spotlink_hwnd = CreateWindow(
         wndclass_name,
         "SpotLink",
-        WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU,
+        WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU | WS_VISIBLE,
         CW_USEDEFAULT, CW_USEDEFAULT,
         wr.right - wr.left, wr.bottom - wr.top,
         NULL,
@@ -186,8 +173,6 @@ int init_window(void) {
         return 1;
     }
 
-    ShowWindow(spotlink_hwnd, SW_SHOWDEFAULT);
-
     return 0;
 }
 
@@ -195,7 +180,7 @@ int init_ui(HWND hwnd) {
     spotlink_log_hwnd = CreateWindow(
         "Edit",
         "", 
-        WS_BORDER | WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY,
+        WS_CHILD | WS_BORDER | WS_VISIBLE | WS_VSCROLL | ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY,
         0, window_height / 2,
         window_width, window_height / 2,
         hwnd,
@@ -252,6 +237,18 @@ int init_ui(HWND hwnd) {
         NULL, NULL
     );
 
+    accordion = AccordionCreate(
+        window_width / 2, 0,
+        window_width / 2, window_height / 2,
+        30,
+        hwnd, (HINSTANCE)spotify_base
+    );
+
+    if (!accordion) {
+        log_msg(LOG_ERROR, "Failed to create accordion");
+        return 1;
+    }
+
     return 0;
 }
 
@@ -263,7 +260,9 @@ int init_logfile(void) {
         return 1;
     }
     
-    //setvbuf(logfile, NULL, _IONBF, 0);  // Disable buffering
+    time_t t = time(NULL);
+    struct tm *tm = localtime(&t);
+    fprintf(logfile, "SPOTLINK %02d-%02d-%d %02d:%02d:%02d\n\n", tm->tm_mday, tm->tm_mon + 1, tm->tm_year + 1900, tm->tm_hour, tm->tm_min, tm->tm_sec);
     
     set_log_file(logfile);
     
@@ -271,29 +270,31 @@ int init_logfile(void) {
 }
 #endif
 
+const char *hook_text_cb(void* hook) {
+    return ((Hook*)hook)->name;
+}
+
 int init_hooks(void) {
-    MH_STATUS status;
-    
-    if ((status = MH_Initialize()) != MH_OK) {
-        log_msg(LOG_ERROR, "Error initializing MinHook: %s", MH_StatusToString(status));
+
+    if (init_hooking((HINSTANCE)spotify_base) != 0) return 1;
+
+    add_hook(scan_pattern((HINSTANCE)spotify_base, SIG_PAUSE_FUNC), hk_pause_func, (void**)(&og_pause_func), "pause_func", 1, &hk_pause);
+    add_hook(scan_pattern_ex((HINSTANCE)spotify_base, SIG_PLAY_FUNC, 1), hk_play_func, (void**)(&og_play_func), "play_func", 1, &hk_play);
+    add_hook(scan_pattern((HINSTANCE)spotify_base, SIG_NEXT_FUNC), hk_next_func, (void**)(&og_next_func), "next_func", 1, &hk_next);
+    add_hook(scan_pattern((HINSTANCE)spotify_base, SIG_PREV_FUNC), hk_prev_func, (void**)(&og_prev_func), "prev_func", 1, &hk_prev);
+    add_hook(scan_pattern((HINSTANCE)spotify_base, SIG_SEEK_FUNC), hk_seek_func, (void**)(&og_seek_func), "seek_func", 1, &hk_seek);
+    add_hook(scan_pattern((HINSTANCE)spotify_base, SIG_SONG_FUNC), hk_song_func, (void**)(&og_song_func), "song_func", 1, &hk_song);
+    add_hook(scan_pattern((HINSTANCE)spotify_base, SIG_REPEAT_FUNC), hk_repeat_func, (void**)(&og_repeat_func), "repeat_func", 1, &hk_repeat);
+    add_hook(scan_pattern((HINSTANCE)spotify_base, SIG_SHUFFLE1_FUNC), hk_shuffle1_func, (void**)(&og_shuffle1_func), "shuffle1_func", 1, &hk_shuffle1);
+    add_hook(scan_pattern((HINSTANCE)spotify_base, SIG_SHUFFLE2_FUNC), hk_shuffle2_func, (void**)(&og_shuffle2_func), "shuffle2_func", 1, &hk_shuffle2);
+   
+    int hooks_size;
+    Hook *hooks = get_hooks(&hooks_size);
+    if (AccordionAddItemArray(accordion, hooks, hooks_size, sizeof(*hooks), HOOKING_WNDCLASS_NAME, NULL, hook_text_cb, 0) != 0) {
+        log_msg(LOG_ERROR, "Failed to add item array to accordion");
         return 1;
     }
-    log_msg(LOG_INFO, "Successfully initialized MinHook");
 
-    // ADD_HOOK(spotify_base + OFFSET_ESPERANTO_PAUSE,   hk_esperanto_pause, og_esperanto_pause, "esperanto_pause");    
-    // ADD_HOOK(spotify_base + OFFSET_TRACK_SKIPPED,   hk_track_skipped, og_track_skipped, "track_skipped");    
-    // ADD_HOOK(spotify_base + OFFSET_SKIP_CALLER,   hk_skip_caller, og_skip_caller, "skip_caller");    
-    // ADD_HOOK(spotify_base + OFFSET_DID_PAUSE,   hk_did_pause, og_did_pause, "did_pause");    
-    // ADD_HOOK(spotify_base + OFFSET_PAUSE_CALLER,   hk_pause_caller, og_pause_caller, "pause_caller");    
-    // ADD_HOOK(spotify_base + OFFSET_2_PAUSE, hk_2_pause, og_2_pause, "2_pause");    
-    // ADD_HOOK(spotify_base + OFFSET_3_PAUSE, hk_3_pause, og_3_pause, "3_pause");    
-    // ADD_HOOK(spotify_base + OFFSET_4_PAUSE, hk_4_pause, og_4_pause, "4_pause");    
-    ADD_HOOK(spotify_base + OFFSET_5_PAUSE, hk_5_pause, og_5_pause, "5_pause");    
-
-    for (size_t i = 0; i < hooks_size; i++) {
-        CREATE_AND_ENABLE_HOOK(hooks[i]);
-    }
-    
     return 0;
 }
 
@@ -309,10 +310,12 @@ int main_loop(void) {
 }
 
 void cleanup(void) {
+    AccordionDestroy(accordion);
     if (spotlink_hwnd)
         DestroyWindow(spotlink_hwnd);
     UnregisterClass(wndclass_name, (HINSTANCE)spotify_base);
 
+    CustomControlsUnInit((HINSTANCE)spotify_base);
 
 #ifdef CONSOLE
     if (console) {
@@ -326,29 +329,7 @@ void cleanup(void) {
         fclose(logfile);
 #endif
 
-    //log_msg(LOG_INFO, "");
-
-    //while (InterlockedCompareExchange(&is_critical, 0, 0) != 0); // wait until critical section is done
-    
-    //SuspendAllThreadsExceptCurrent();
-
-    for (size_t i = 0; i < hooks_size; i++) {
-        
-        //EnterCriticalSection((LPCRITICAL_SECTION)hooks[i].address);
-        //is_critical = 1;
-        if (hooks[i].enabled)
-            MH_DisableHook((LPVOID)(hooks[i].address));
-        
-        if (hooks[i].created)
-            MH_RemoveHook((LPVOID)(hooks[i].address));
-        //is_critical = 0;
-        //LeaveCriticalSection((LPCRITICAL_SECTION)hooks[i].address);
-    }
-
-    //ResumeAllThreads();
-
-    MH_Uninitialize();
-
+    cleanup_hooking((HINSTANCE)spotify_base);
 
     CreateThread(NULL, 0, EjectThread, NULL, 0, NULL);
 }
@@ -363,8 +344,8 @@ LRESULT CALLBACK SpotLinkWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
     switch (uMsg) {
     case WM_CREATE:
         if (init_ui(hwnd) != 0) {
-            PostQuitMessage(0);
-            return 1;
+            PostQuitMessage(1);
+            break;
         }
         break;
     case WM_COMMAND:
@@ -380,6 +361,10 @@ LRESULT CALLBACK SpotLinkWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
             break;
         case BUTTON_CLEAR:
             SendMessage(spotlink_log_hwnd, WM_SETTEXT, (WPARAM)0, (LPARAM)"");
+            int log_length = GetWindowTextLength(spotlink_log_hwnd);
+            char buf[50];
+            sprintf(buf, "DebugLog length: %d", log_length);
+            SetWindowText(debug_label_hwnd, buf);
             break;
         }
         break;
@@ -390,6 +375,13 @@ LRESULT CALLBACK SpotLinkWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
         return 0;
     }
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
+}
+
+void log_msg_wrapper(const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    log_msg(LOG_INFO, format, args);
+    va_end(args);
 }
 
 void SuspendAllThreadsExceptCurrent(void) {

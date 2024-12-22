@@ -5,7 +5,7 @@ if not exist build\ (
 setlocal enabledelayedexpansion
 set "Compiler=gcc"
 set "Wflags=-Wall -Wextra"
-set "Buildflags="
+set "Buildflags=-O3"
 set "Outputdir=.\build\"
 set "Outputfile=SpotLinkInjector"
 set "Includepaths=-I./include"
