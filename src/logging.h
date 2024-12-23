@@ -8,6 +8,7 @@
 
 enum LogLevel {
 	LOG_INFO = 0,
+	LOG_SUCCESS,
 	LOG_WARNING,
 	LOG_ERROR,
 	LOG_DEBUG,
@@ -21,5 +22,4 @@ void log_sep(void);
 void set_log_window(HWND *window);
 void set_log_file(FILE* file);
 void set_debug_label(HWND *label);
-void set_log_mutex(HANDLE *mutex);
 #endif // INCLUDE_LOGGING_H

@@ -75,13 +75,16 @@ uint64_t scan_pattern_ex(HINSTANCE base, const char *pattern, int skip_count) {
 			}
 		}
 		if (found) {
-			if (skip_count-- == 0)
-				break;
+			if (skip_count > 0) {
+				skip_count--;
+				continue;
+			}
+			free(pattern_array);
+			return (uint64_t)(module_base + i);
 		}
 	}
 
 	free(pattern_array);
-	if (found)
-		return (uint64_t)(module_base + i);
+
 	return 0;
 }

@@ -3,10 +3,9 @@
 #include <time.h>
 #include <Windows.h>
 #include <TlHelp32.h>
+#include <Richedit.h>
 
 #include "logging.h"
-
-#include "MinHook.h"
 
 #include "hooking.h"
 #include "hookfuncs.h"
@@ -14,6 +13,8 @@
 #include "sigscanner.h"
 
 #include <Win32CustomControls/CustomControls.h>
+
+//#include <Richedit.h>
 
 #define BUTTON_PLAY  (1)
 #define BUTTON_PAUSE (2)
@@ -81,9 +82,7 @@ DWORD WINAPI Main(LPVOID lpParameter) {
     if (init_main() != 0) return 1;
 
     log_sep();
-    log_msg(LOG_INFO, "Successfully initialized everything");
-    log_msg(LOG_INFO, "spotify.exe Base Address: 0x%llx", spotify_base);
-    log_msg(LOG_INFO, "libcef.dll  Base Address: 0x%llx", libcef_base);
+    log_msg(LOG_INFO, "Initialization successful");
     log_sep();
 
     int ret = main_loop();
@@ -278,15 +277,27 @@ int init_hooks(void) {
 
     if (init_hooking((HINSTANCE)spotify_base) != 0) return 1;
 
-    add_hook(scan_pattern((HINSTANCE)spotify_base, SIG_PAUSE_FUNC), hk_pause_func, (void**)(&og_pause_func), "pause_func", 1, &hk_pause);
-    add_hook(scan_pattern_ex((HINSTANCE)spotify_base, SIG_PLAY_FUNC, 1), hk_play_func, (void**)(&og_play_func), "play_func", 1, &hk_play);
-    add_hook(scan_pattern((HINSTANCE)spotify_base, SIG_NEXT_FUNC), hk_next_func, (void**)(&og_next_func), "next_func", 1, &hk_next);
-    add_hook(scan_pattern((HINSTANCE)spotify_base, SIG_PREV_FUNC), hk_prev_func, (void**)(&og_prev_func), "prev_func", 1, &hk_prev);
-    add_hook(scan_pattern((HINSTANCE)spotify_base, SIG_SEEK_FUNC), hk_seek_func, (void**)(&og_seek_func), "seek_func", 1, &hk_seek);
-    add_hook(scan_pattern((HINSTANCE)spotify_base, SIG_SONG_FUNC), hk_song_func, (void**)(&og_song_func), "song_func", 1, &hk_song);
-    add_hook(scan_pattern((HINSTANCE)spotify_base, SIG_REPEAT_FUNC), hk_repeat_func, (void**)(&og_repeat_func), "repeat_func", 1, &hk_repeat);
-    add_hook(scan_pattern((HINSTANCE)spotify_base, SIG_SHUFFLE1_FUNC), hk_shuffle1_func, (void**)(&og_shuffle1_func), "shuffle1_func", 1, &hk_shuffle1);
-    add_hook(scan_pattern((HINSTANCE)spotify_base, SIG_SHUFFLE2_FUNC), hk_shuffle2_func, (void**)(&og_shuffle2_func), "shuffle2_func", 1, &hk_shuffle2);
+    uint64_t pause_addr    = scan_pattern   ((HINSTANCE)spotify_base, SIG_PAUSE_FUNC   );
+    uint64_t play_addr     = scan_pattern_ex((HINSTANCE)spotify_base, SIG_PLAY_FUNC,  1);
+    uint64_t next_addr     = scan_pattern   ((HINSTANCE)spotify_base, SIG_NEXT_FUNC    );
+    uint64_t prev_addr     = scan_pattern   ((HINSTANCE)spotify_base, SIG_PREV_FUNC    );
+    uint64_t seek_addr     = scan_pattern   ((HINSTANCE)spotify_base, SIG_SEEK_FUNC    );
+    uint64_t song_addr     = scan_pattern   ((HINSTANCE)spotify_base, SIG_SONG_FUNC    );
+    uint64_t repeat_addr   = scan_pattern   ((HINSTANCE)spotify_base, SIG_REPEAT_FUNC  );
+    uint64_t shuffle1_addr = scan_pattern   ((HINSTANCE)spotify_base, SIG_SHUFFLE1_FUNC);
+    uint64_t shuffle2_addr = scan_pattern   ((HINSTANCE)spotify_base, SIG_SHUFFLE2_FUNC);
+
+
+
+    add_hook(pause_addr,    hk_pause_func,    (void**)(&og_pause_func),    "pause_func",    1, &hk_pause   );
+    add_hook(play_addr,     hk_play_func,     (void**)(&og_play_func),     "play_func",     1, &hk_play    );
+    add_hook(next_addr,     hk_next_func,     (void**)(&og_next_func),     "next_func",     1, &hk_next    );
+    add_hook(prev_addr,     hk_prev_func,     (void**)(&og_prev_func),     "prev_func",     1, &hk_prev    );
+    add_hook(seek_addr,     hk_seek_func,     (void**)(&og_seek_func),     "seek_func",     1, &hk_seek    );
+    add_hook(song_addr,     hk_song_func,     (void**)(&og_song_func),     "song_func",     1, &hk_song    );
+    add_hook(repeat_addr,   hk_repeat_func,   (void**)(&og_repeat_func),   "repeat_func",   1, &hk_repeat  );
+    add_hook(shuffle1_addr, hk_shuffle1_func, (void**)(&og_shuffle1_func), "shuffle1_func", 1, &hk_shuffle1);
+    add_hook(shuffle2_addr, hk_shuffle2_func, (void**)(&og_shuffle2_func), "shuffle2_func", 1, &hk_shuffle2);
    
     int hooks_size;
     Hook *hooks = get_hooks(&hooks_size);

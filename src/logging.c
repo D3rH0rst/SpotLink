@@ -24,16 +24,16 @@ void log_msg(int level, const char* text, ...) {
 	char buffer[MAX_LOG_MSG_LENGTH] = { 0 };
 
 	switch (level) {
-		case LOG_INFO:    strcpy(buffer, "INFO: ");    break;
+		case LOG_INFO:    strcpy(buffer, "INFO: "   );    break;
+		case LOG_SUCCESS: strcpy(buffer, "SUCCESS: "); break;
 		case LOG_WARNING: strcpy(buffer, "WARNING: "); break;
-		case LOG_ERROR:   strcpy(buffer, "ERROR: ");   break;
-		case LOG_DEBUG:   strcpy(buffer, "DEBUG: ");   break;
+		case LOG_ERROR:   strcpy(buffer, "ERROR: "  );   break;
+		case LOG_DEBUG:   strcpy(buffer, "DEBUG: "  );   break;
 		default: break; // No Log level
 	}
 	unsigned int textSize = (unsigned int)strlen(text);
 	memcpy(buffer + strlen(buffer), text, (textSize < (MAX_LOG_MSG_LENGTH - 12)) ? textSize : (MAX_LOG_MSG_LENGTH - 12));
 	strcat(buffer, "\r\n");
-	//vprintf(buffer, args);
 	int message_len = vsnprintf(formatted_message, MAX_FORMATTED_BUFFER_LENGTH, buffer, args);
 
 	if (log_window && *log_window) {
