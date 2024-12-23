@@ -3,7 +3,7 @@
 #include <time.h>
 #include <Windows.h>
 #include <TlHelp32.h>
-#include <Richedit.h>
+#include <DbgHelp.h>
 
 #include "logging.h"
 
