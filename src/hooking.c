@@ -260,7 +260,12 @@ int init_hooking(HINSTANCE hInstance) {
 		log_msg(LOG_ERROR, "Error initializing MinHook: %s", MH_StatusToString(status));
 		return 1;
 	}
-	log_msg(LOG_INFO, "Successfully initialized MinHook");
+	if (rh_init() != 0) {
+		log_msg(LOG_ERROR, "Failed to initialize RuntimeHooks");
+		return 1;
+	}
+
+	log_msg(LOG_INFO, "Successfully initialized Hooking");
 
 	return 0;
 }
@@ -273,11 +278,14 @@ void cleanup_hooking(HINSTANCE hInstance) {
 			MH_DisableHook((LPVOID)(hooks[i].address));
 
 		MH_RemoveHook((LPVOID)(hooks[i].address));
+		if (hooks[i].runtime_hook) {
+			free(hooks[i].runtime_hook->called_str);
+			free(hooks[i].runtime_hook);
+		}
 	}
 
 	MH_Uninitialize();
-
-	// free any memory created by runtime hooks
+	rh_clean();
 }
 
 int add_hook(uint64_t address, void *hk_func, void **og_func, const char *name, char start_enabled, Hook **cb_hook) {
@@ -302,6 +310,7 @@ int add_hook(uint64_t address, void *hk_func, void **og_func, const char *name, 
 		log_msg(LOG_ERROR, "Error creating hook %s: %s", name, MH_StatusToString(status));
 		return 1;
 	}
+	log_msg(LOG_INFO, "og_func: 0x%llX *og_func: 0x%llX", (uint64_t)h->og_func, (uint64_t)*h->og_func);
 
 	if (start_enabled) {
 		if ((status = MH_EnableHook((LPVOID)address)) != MH_OK) {
@@ -350,4 +359,53 @@ void print_caller(void) {
 			caller_entry
 		);
 	}
+	else {
+		log_msg(LOG_WARNING, "CaptureStackBackTrace captured 0 frames: %ld", GetLastError());
+	}
+}
+
+Hook *make_runtime_hook(uint64_t addr, const char *name, int argcount, char start_enabled) {
+	Hook *h = &hooks[hooks_size];
+	h->address = addr;
+	h->name = name;
+	h->runtime_hook = malloc(sizeof(RuntimeHook));
+	if (!h->runtime_hook) {
+		log_msg(LOG_ERROR, "Failed to allocate memory for RuntimeHook");
+		return NULL;
+	}
+	h->runtime_hook->arg_count = argcount;
+
+	void *func_addr = make_rh_hk_func(h);
+
+	if (!func_addr) {
+		log_msg(LOG_ERROR, "Failed to generate runtime hook function");
+		free(h->runtime_hook);
+		return NULL;
+	}
+	log_msg(LOG_SUCCESS, "Created Runtime function at 0x%llX", (uint64_t)func_addr);
+
+	h->hk_func = func_addr;
+	h->og_func = &h->runtime_hook->og_func;
+
+	MH_STATUS status;
+	if ((status = MH_CreateHook((LPVOID)addr, func_addr, h->og_func)) != MH_OK) {
+		log_msg(LOG_ERROR, "Failed to create runtime hook: %s", MH_StatusToString(status));
+		free(h->runtime_hook->called_str);
+		free(h->runtime_hook);
+		return NULL;
+	}
+	log_msg(LOG_INFO, "og_func: 0x%llX *og_func: 0x%llX", (uint64_t)h->og_func, (uint64_t)*h->og_func);
+
+	if (start_enabled) {
+		if ((status = MH_EnableHook((LPVOID)addr)) != MH_OK) {
+			log_msg(LOG_ERROR, "Failed to enable runtime hook: %s", MH_StatusToString(status));
+			free(h->runtime_hook->called_str);
+			free(h->runtime_hook);
+			return NULL;
+		}
+	}
+
+	hooks_size++;
+
+	return h;
 }

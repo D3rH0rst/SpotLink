@@ -126,3 +126,146 @@ int64_t __fastcall hk_shuffle2_func(int64_t a1, int64_t a2, int64_t a3, int64_t 
 	log_sep();
 	return ret;
 }
+
+// ----------------------------- SAMPLE HOOK FUNCS FOR REFERENCE IN IDA ----------------------------- //
+
+
+// 0 args
+Hook *hk_0 = NULL;
+int64_t(__fastcall *og_0_func)(void) = NULL;
+int64_t __fastcall hk_0_func(void) {
+	hook_called_callback(hk_0);
+	log_sep();
+	log_msg(LOG_INFO, "Called `int64_t hk_0_func()`");
+	print_caller();
+	int64_t ret = og_0_func();
+	log_msg(LOG_INFO, "ret = 0xllX", ret);
+	log_sep();
+	return ret;
+}
+
+// 1 arg
+Hook *hk_1 = NULL;
+int64_t(__fastcall *og_1_func)(int64_t a1) = NULL;
+int64_t __fastcall hk_1_func(int64_t a1) {
+	hook_called_callback(hk_1);
+	log_sep();
+	log_msg(LOG_INFO, "Called `int64_t hk_1_func(0x%llX)`", a1);
+	print_caller();
+	int64_t ret = og_1_func(a1);
+	log_msg(LOG_INFO, "ret = 0xllX", ret);
+	log_sep();
+	return ret;
+}
+
+// 2 args
+Hook *hk_2 = NULL;
+int64_t(__fastcall *og_2_func)(int64_t a1, int64_t a2) = NULL;
+int64_t __fastcall hk_2_func(int64_t a1, int64_t a2) {
+	hook_called_callback(hk_2);
+	log_sep();
+	log_msg(LOG_INFO, "Called `int64_t hk_2_func(0x%llX, 0x%llX)`", a1, a2);
+	print_caller();
+	int64_t ret = og_2_func(a1, a2);
+	log_msg(LOG_INFO, "ret = 0xllX", ret);
+	log_sep();
+	return ret;
+}
+
+// 3 args
+Hook *hk_3 = NULL;
+int64_t(__fastcall *og_3_func)(int64_t a1, int64_t a2, int64_t a3) = NULL;
+int64_t __fastcall hk_3_func(int64_t a1, int64_t a2, int64_t a3) {
+	hook_called_callback(hk_3);
+	log_sep();
+	log_msg(LOG_INFO, "Called `int64_t hk_3_func(0x%llX, 0x%llX, 0x%llX)`", a1, a2, a3);
+	print_caller();
+	int64_t ret = og_3_func(a1, a2, a3);
+	log_msg(LOG_INFO, "ret = 0xllX", ret);
+	log_sep();
+	return ret;
+}
+
+// 4 args
+Hook *hk_4 = NULL;
+int64_t(__fastcall *og_4_func)(int64_t a1, int64_t a2, int64_t a3, int64_t a4) = NULL;
+int64_t __fastcall hk_4_func(int64_t a1, int64_t a2, int64_t a3, int64_t a4) {
+	hook_called_callback(hk_4);
+	log_sep();
+	log_msg(LOG_INFO, "Called `int64_t hk_4_func(0x%llX, 0x%llX, 0x%llX, 0x%llX)`", a1, a2, a3, a4);
+	print_caller();
+	int64_t ret = og_4_func(a1, a2, a3, a4);
+	log_msg(LOG_INFO, "ret = 0xllX", ret);
+	log_sep();
+	return ret;
+}
+
+// 5 args
+Hook *hk_5 = NULL;
+int64_t(__fastcall *og_5_func)(int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5) = NULL;
+int64_t __fastcall hk_5_func(int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5) {
+	hook_called_callback(hk_5);
+	log_sep();
+	log_msg(LOG_INFO, "Called `int64_t hk_5_func(0x%llX, 0x%llX, 0x%llX, 0x%llX, 0x%llX)`", a1, a2, a3, a4, a5);
+	print_caller();
+	int64_t ret = og_5_func(a1, a2, a3, a4, a5);
+	log_msg(LOG_INFO, "ret = 0xllX", ret);
+	log_sep();
+	return ret;
+}
+
+// 6 args
+Hook *hk_6 = NULL;
+int64_t(__fastcall *og_6_func)(int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6) = NULL;
+int64_t __fastcall hk_6_func(int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6) {
+	hook_called_callback(hk_6);
+	log_sep();
+	log_msg(LOG_INFO, "Called `int64_t hk_6_func(0x%llX, 0x%llX, 0x%llX, 0x%llX, 0x%llX, 0x%llX)`", a1, a2, a3, a4, a5, a6);
+	print_caller();
+	int64_t ret = og_6_func(a1, a2, a3, a4, a5, a6);
+	log_msg(LOG_INFO, "ret = 0xllX", ret);
+	log_sep();
+	return ret;
+}
+
+// 7 args
+Hook *hk_7 = NULL;
+int64_t(__fastcall *og_7_func)(int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7) = NULL;
+int64_t __fastcall hk_7_func(int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7) {
+	hook_called_callback(hk_7);
+	log_sep();
+	log_msg(LOG_INFO, "Called `int64_t hk_7_func(0x%llX, 0x%llX, 0x%llX, 0x%llX, 0x%llX, 0x%llX, 0x%llX)`", a1, a2, a3, a4, a5, a6, a7);
+	print_caller();
+	int64_t ret = og_7_func(a1, a2, a3, a4, a5, a6, a7);
+	log_msg(LOG_INFO, "ret = 0xllX", ret);
+	log_sep();
+	return ret;
+}
+
+// 8 args
+Hook *hk_8 = NULL;
+int64_t(__fastcall *og_8_func)(int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8) = NULL;
+int64_t __fastcall hk_8_func(int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8) {
+	hook_called_callback(hk_8);
+	log_sep();
+	log_msg(LOG_INFO, "Called `int64_t hk_8_func(0x%llX, 0x%llX, 0x%llX, 0x%llX, 0x%llX, 0x%llX, 0x%llX, 0x%llX)`", a1, a2, a3, a4, a5, a6, a7, a8);
+	print_caller();
+	int64_t ret = og_8_func(a1, a2, a3, a4, a5, a6, a7, a8);
+	log_msg(LOG_INFO, "ret = 0xllX", ret);
+	log_sep();
+	return ret;
+}
+
+// 9 args
+Hook *hk_9 = NULL;
+int64_t(__fastcall *og_9_func)(int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8, int64_t a9) = NULL;
+int64_t __fastcall hk_9_func(int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8, int64_t a9) {
+	hook_called_callback(hk_9);
+	log_sep();
+	log_msg(LOG_INFO, "Called `int64_t hk_9_func(0x%llX, 0x%llX, 0x%llX, 0x%llX, 0x%llX, 0x%llX, 0x%llX, 0x%llX, 0x%llX)`", a1, a2, a3, a4, a5, a6, a7, a8, a9);
+	print_caller();
+	int64_t ret = og_9_func(a1, a2, a3, a4, a5, a6, a7, a8, a9);
+	log_msg(LOG_INFO, "ret = 0xllX", ret);
+	log_sep();
+	return ret;
+}

@@ -19,6 +19,7 @@
 #define BUTTON_PLAY  (1)
 #define BUTTON_PAUSE (2)
 #define BUTTON_CLEAR (3)
+#define BUTTON_RH_TEMP (4)
 
 HMODULE dll_handle;
 uint64_t spotify_base;
@@ -29,7 +30,7 @@ FILE* console;
 
 #ifdef LOGFILE
 FILE* logfile;
-const char* logfile_path = "C:\\Programming\\Projects\\SpotLink\\C_DLL\\logfile.txt";
+const char* logfile_path = "./spotlink_logfile.txt";
 #endif
 
 HWND spotlink_hwnd;
@@ -65,6 +66,8 @@ void ResumeAllThreads(void);
 
 LRESULT CALLBACK SpotLinkWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
+uint64_t testrhfunc(uint64_t a1, uint64_t a2, uint64_t a3);
+
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
     UNREFERENCED_PARAMETER(lpvReserved);
     switch (fdwReason) {
@@ -79,10 +82,14 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
 DWORD WINAPI Main(LPVOID lpParameter) {
     UNREFERENCED_PARAMETER(lpParameter);
 
-    if (init_main() != 0) return 1;
+    if (init_main() != 0) {
+        cleanup();
+        return 1;
+    }
 
     log_sep();
-    log_msg(LOG_INFO, "Initialization successful");
+    log_msg(LOG_INFO, "Initialization successful - Spotify at 0x%llX", spotify_base);
+    log_msg(LOG_DEBUG, "tsetrhfunc at 0x%llX", (uint64_t)testrhfunc);
     log_sep();
 
     int ret = main_loop();
@@ -213,6 +220,18 @@ int init_ui(HWND hwnd) {
         (HMENU)BUTTON_PAUSE, NULL, NULL
     );
 
+    // DEBUG
+    CreateWindow(
+        "Button",
+        "RH Pause",
+        WS_VISIBLE | WS_CHILD,
+        50, 120,
+        100, 30,
+        hwnd,
+        (HMENU)BUTTON_RH_TEMP, NULL, NULL
+    );
+    //
+
     debug_label_hwnd = CreateWindow(
         "Static",
         "DebugLog length: 0",
@@ -277,7 +296,7 @@ int init_hooks(void) {
 
     if (init_hooking((HINSTANCE)spotify_base) != 0) return 1;
 
-    uint64_t pause_addr    = scan_pattern   ((HINSTANCE)spotify_base, SIG_PAUSE_FUNC   );
+    //uint64_t pause_addr    = scan_pattern   ((HINSTANCE)spotify_base, SIG_PAUSE_FUNC   );
     uint64_t play_addr     = scan_pattern_ex((HINSTANCE)spotify_base, SIG_PLAY_FUNC,  1);
     uint64_t next_addr     = scan_pattern   ((HINSTANCE)spotify_base, SIG_NEXT_FUNC    );
     uint64_t prev_addr     = scan_pattern   ((HINSTANCE)spotify_base, SIG_PREV_FUNC    );
@@ -289,7 +308,7 @@ int init_hooks(void) {
 
 
 
-    add_hook(pause_addr,    hk_pause_func,    (void**)(&og_pause_func),    "pause_func",    1, &hk_pause   );
+    //add_hook(pause_addr,    hk_pause_func,    (void**)(&og_pause_func),    "pause_func",    1, &hk_pause   );
     add_hook(play_addr,     hk_play_func,     (void**)(&og_play_func),     "play_func",     1, &hk_play    );
     add_hook(next_addr,     hk_next_func,     (void**)(&og_next_func),     "next_func",     1, &hk_next    );
     add_hook(prev_addr,     hk_prev_func,     (void**)(&og_prev_func),     "prev_func",     1, &hk_prev    );
@@ -321,7 +340,8 @@ int main_loop(void) {
 }
 
 void cleanup(void) {
-    AccordionDestroy(accordion);
+    if (accordion)
+        AccordionDestroy(accordion);
     if (spotlink_hwnd)
         DestroyWindow(spotlink_hwnd);
     UnregisterClass(wndclass_name, (HINSTANCE)spotify_base);
@@ -351,6 +371,11 @@ DWORD WINAPI EjectThread(LPVOID lpParameter) {
     return 0;
 }
 
+uint64_t testrhfunc(uint64_t a1, uint64_t a2, uint64_t a3) {
+    log_msg(LOG_INFO, "original function has been called with 0x%llX 0x%llX 0x%llX", a1, a2, a3);
+    return 0xCA11ED;
+}
+
 LRESULT CALLBACK SpotLinkWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
     case WM_CREATE:
@@ -376,6 +401,19 @@ LRESULT CALLBACK SpotLinkWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
             char buf[50];
             sprintf(buf, "DebugLog length: %d", log_length);
             SetWindowText(debug_label_hwnd, buf);
+            break;
+        case BUTTON_RH_TEMP:
+            Hook *h = make_runtime_hook(spotify_base + 0x59F594, "runtime hook pause", 3, 0);
+            //Hook *h = make_runtime_hook((uint64_t)testrhfunc, "runtime hook test", 3, 0);
+            if (!h) {
+                log_msg(LOG_ERROR, "Failed to create Runtime Hook");
+                return 1;
+            }
+            if (AccordionAddItem(accordion, h, HOOKING_WNDCLASS_NAME, NULL, h->name, 0) != 0) {
+                log_msg(LOG_ERROR, "Failed to add hook item to accordion");
+                return 1;
+            }
+            log_msg(LOG_SUCCESS, "Created Runtime Hook and added to accordion");
             break;
         }
         break;
