@@ -310,7 +310,6 @@ int add_hook(uint64_t address, void *hk_func, void **og_func, const char *name, 
 		log_msg(LOG_ERROR, "Error creating hook %s: %s", name, MH_StatusToString(status));
 		return 1;
 	}
-	log_msg(LOG_INFO, "og_func: 0x%llX *og_func: 0x%llX", (uint64_t)h->og_func, (uint64_t)*h->og_func);
 
 	if (start_enabled) {
 		if ((status = MH_EnableHook((LPVOID)address)) != MH_OK) {
@@ -334,7 +333,7 @@ void hook_called_callback(Hook *h) {
 	SetWindowText(h->called_count_label, buf);
 }
 
-void print_caller(void) {
+void print_caller2(void) {
 	uint64_t caller;
 	uint64_t caller_entry;
 	uint64_t caller_base;
@@ -361,6 +360,35 @@ void print_caller(void) {
 	}
 	else {
 		log_msg(LOG_WARNING, "CaptureStackBackTrace captured 0 frames: %ld", GetLastError());
+		void *retaddr = __builtin_return_address(1);
+		log_msg(LOG_DEBUG, "__builtin_return_address(1) returned 0x%llX", (uint64_t)retaddr);
+	}
+}
+
+void print_caller(void) {
+	uint64_t caller;
+	uint64_t caller_entry;
+	uint64_t caller_base;
+	PRUNTIME_FUNCTION runtime_function;
+	
+	caller = (uint64_t)__builtin_return_address(1);
+	if (caller) {
+		runtime_function = RtlLookupFunctionEntry(caller, &caller_base, NULL);
+		if (!runtime_function) {
+			caller_entry = 0;
+		}
+		else {
+			caller_entry = caller_base + runtime_function->BeginAddress;
+		}
+		HMODULE m;
+		char module_name[MAX_PATH];
+		GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCSTR)caller, &m);
+		GetModuleFileName(m, module_name, sizeof(module_name));
+		log_msg(LOG_INFO, "Function caller: %s!0x%llX (OFF: 0x%llX, Entry: 0x%llX)",
+			strrchr(module_name, '\\') + 1,
+			caller, caller - (uint64_t)m,
+			caller_entry
+		);
 	}
 }
 
@@ -394,7 +422,6 @@ Hook *make_runtime_hook(uint64_t addr, const char *name, int argcount, char star
 		free(h->runtime_hook);
 		return NULL;
 	}
-	log_msg(LOG_INFO, "og_func: 0x%llX *og_func: 0x%llX", (uint64_t)h->og_func, (uint64_t)*h->og_func);
 
 	if (start_enabled) {
 		if ((status = MH_EnableHook((LPVOID)addr)) != MH_OK) {

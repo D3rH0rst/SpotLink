@@ -19,7 +19,10 @@
 #define BUTTON_PLAY  (1)
 #define BUTTON_PAUSE (2)
 #define BUTTON_CLEAR (3)
-#define BUTTON_RH_TEMP (4)
+#define BUTTON_CREATE_RH (4)
+
+#define RH_DLGWIDTH 300
+#define RH_DLGHEIGHT 150
 
 HMODULE dll_handle;
 uint64_t spotify_base;
@@ -39,6 +42,8 @@ HWND debug_label_hwnd;
 
 Accordion *accordion;
 
+DLGTEMPLATE *rh_dialog_template;
+
 const char* wndclass_name = "SpotLinkWndClass";
 const int window_width = 1280;
 const int window_height = 720;
@@ -56,17 +61,14 @@ int init_window();
 void log_msg_wrapper(const char *format, ...);
 int init_ui(HWND hwnd);
 int init_hooks(void);
+int rh_init_dlg(void);
 
 int main_loop(void);
 void cleanup(void);
 DWORD WINAPI EjectThread(LPVOID lpParameter);
 
-void SuspendAllThreadsExceptCurrent(void);
-void ResumeAllThreads(void);
-
 LRESULT CALLBACK SpotLinkWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-
-uint64_t testrhfunc(uint64_t a1, uint64_t a2, uint64_t a3);
+LRESULT CALLBACK RH_DialogWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
     UNREFERENCED_PARAMETER(lpvReserved);
@@ -76,6 +78,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
             CreateThread(NULL, 0, Main, NULL, 0, 0);
             break;
     }
+
     return TRUE;
 }
 
@@ -89,7 +92,6 @@ DWORD WINAPI Main(LPVOID lpParameter) {
 
     log_sep();
     log_msg(LOG_INFO, "Initialization successful - Spotify at 0x%llX", spotify_base);
-    log_msg(LOG_DEBUG, "tsetrhfunc at 0x%llX", (uint64_t)testrhfunc);
     log_sep();
 
     int ret = main_loop();
@@ -115,6 +117,8 @@ int init_main(void) {
 #endif
 
     if (CustomControlsInit((HINSTANCE)spotify_base, log_msg_wrapper) != 0) return 1;
+
+    if (rh_init_dlg() != 0) return 1;
 
     if (init_window() != 0) return 1;
 
@@ -223,12 +227,12 @@ int init_ui(HWND hwnd) {
     // DEBUG
     CreateWindow(
         "Button",
-        "RH Pause",
+        "Create RuntimeHook",
         WS_VISIBLE | WS_CHILD,
         50, 120,
-        100, 30,
+        200, 30,
         hwnd,
-        (HMENU)BUTTON_RH_TEMP, NULL, NULL
+        (HMENU)BUTTON_CREATE_RH, NULL, NULL
     );
     //
 
@@ -296,7 +300,7 @@ int init_hooks(void) {
 
     if (init_hooking((HINSTANCE)spotify_base) != 0) return 1;
 
-    //uint64_t pause_addr    = scan_pattern   ((HINSTANCE)spotify_base, SIG_PAUSE_FUNC   );
+    uint64_t pause_addr    = scan_pattern   ((HINSTANCE)spotify_base, SIG_PAUSE_FUNC   );
     uint64_t play_addr     = scan_pattern_ex((HINSTANCE)spotify_base, SIG_PLAY_FUNC,  1);
     uint64_t next_addr     = scan_pattern   ((HINSTANCE)spotify_base, SIG_NEXT_FUNC    );
     uint64_t prev_addr     = scan_pattern   ((HINSTANCE)spotify_base, SIG_PREV_FUNC    );
@@ -306,9 +310,7 @@ int init_hooks(void) {
     uint64_t shuffle1_addr = scan_pattern   ((HINSTANCE)spotify_base, SIG_SHUFFLE1_FUNC);
     uint64_t shuffle2_addr = scan_pattern   ((HINSTANCE)spotify_base, SIG_SHUFFLE2_FUNC);
 
-
-
-    //add_hook(pause_addr,    hk_pause_func,    (void**)(&og_pause_func),    "pause_func",    1, &hk_pause   );
+    add_hook(pause_addr,    hk_pause_func,    (void**)(&og_pause_func),    "pause_func",    1, &hk_pause   );
     add_hook(play_addr,     hk_play_func,     (void**)(&og_play_func),     "play_func",     1, &hk_play    );
     add_hook(next_addr,     hk_next_func,     (void**)(&og_next_func),     "next_func",     1, &hk_next    );
     add_hook(prev_addr,     hk_prev_func,     (void**)(&og_prev_func),     "prev_func",     1, &hk_prev    );
@@ -362,6 +364,9 @@ void cleanup(void) {
 
     cleanup_hooking((HINSTANCE)spotify_base);
 
+    if (rh_dialog_template)
+        free(rh_dialog_template);
+
     CreateThread(NULL, 0, EjectThread, NULL, 0, NULL);
 }
 
@@ -369,11 +374,6 @@ DWORD WINAPI EjectThread(LPVOID lpParameter) {
     UNREFERENCED_PARAMETER(lpParameter);
     FreeLibraryAndExitThread(dll_handle, 0);
     return 0;
-}
-
-uint64_t testrhfunc(uint64_t a1, uint64_t a2, uint64_t a3) {
-    log_msg(LOG_INFO, "original function has been called with 0x%llX 0x%llX 0x%llX", a1, a2, a3);
-    return 0xCA11ED;
 }
 
 LRESULT CALLBACK SpotLinkWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
@@ -386,35 +386,42 @@ LRESULT CALLBACK SpotLinkWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
         break;
     case WM_COMMAND:
         switch (wParam) {
-        case BUTTON_PLAY:
-            log_msg(LOG_INFO, "Play button pressed");
-            //hk_esperanto_pause();
-            //hk_resume_func(0x1bfc08abf40, 0, 0x9888bfd5c0);
-            break;
-        case BUTTON_PAUSE:
-            log_msg(LOG_INFO, "Pause button pressed");
-            //hk_resume_func(0x1bfc08abf40, 1, 0x9888bfdcc0);
-            break;
-        case BUTTON_CLEAR:
-            SendMessage(spotlink_log_hwnd, WM_SETTEXT, (WPARAM)0, (LPARAM)"");
-            int log_length = GetWindowTextLength(spotlink_log_hwnd);
-            char buf[50];
-            sprintf(buf, "DebugLog length: %d", log_length);
-            SetWindowText(debug_label_hwnd, buf);
-            break;
-        case BUTTON_RH_TEMP:
-            Hook *h = make_runtime_hook(spotify_base + 0x59F594, "runtime hook pause", 3, 0);
-            //Hook *h = make_runtime_hook((uint64_t)testrhfunc, "runtime hook test", 3, 0);
-            if (!h) {
-                log_msg(LOG_ERROR, "Failed to create Runtime Hook");
-                return 1;
+            case BUTTON_PLAY:
+                log_msg(LOG_INFO, "Play button pressed");
+                //hk_esperanto_pause();
+                //hk_resume_func(0x1bfc08abf40, 0, 0x9888bfd5c0);
+                break;
+            case BUTTON_PAUSE:
+                log_msg(LOG_INFO, "Pause button pressed");
+                //hk_resume_func(0x1bfc08abf40, 1, 0x9888bfdcc0);
+                break;
+            case BUTTON_CLEAR:
+            {
+                SendMessage(spotlink_log_hwnd, WM_SETTEXT, (WPARAM)0, (LPARAM)"");
+                int log_length = GetWindowTextLength(spotlink_log_hwnd);
+                char buf[50];
+                sprintf(buf, "DebugLog length: %d", log_length);
+                SetWindowText(debug_label_hwnd, buf);
+                break;
             }
-            if (AccordionAddItem(accordion, h, HOOKING_WNDCLASS_NAME, NULL, h->name, 0) != 0) {
-                log_msg(LOG_ERROR, "Failed to add hook item to accordion");
-                return 1;
+            case BUTTON_CREATE_RH:
+            {
+                RH_Data rh_data;
+                rh_data.addr = 0xADD0;
+                INT_PTR result = DialogBoxIndirectParam(NULL, rh_dialog_template, hwnd, RH_DialogWndProc, (LPARAM)(&rh_data));
+
+                if (result == TRUE) { // Create button pressed
+                    log_msg(LOG_DEBUG, "Dialog TRUE result");
+                    // use the rh_data to create the runtime hook
+                }
+                else if (result == FALSE) { // Cancel or close pressed
+                    log_msg(LOG_DEBUG, "Dialog FALSE result");
+                }
+                else {
+                    log_msg(LOG_ERROR, "Some error occured in DialogBoxIndirectParam: %d, %ld", result, GetLastError());
+                }
+                break;
             }
-            log_msg(LOG_SUCCESS, "Created Runtime Hook and added to accordion");
-            break;
         }
         break;
     default:
@@ -433,46 +440,76 @@ void log_msg_wrapper(const char *format, ...) {
     va_end(args);
 }
 
-void SuspendAllThreadsExceptCurrent(void) {
-    HANDLE hProcess = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
-    THREADENTRY32 te32;
-    te32.dwSize = sizeof(THREADENTRY32);
+int rh_init_dlg(void) {
+    LPVOID lpVoid;
+    WCHAR* lpwsStr;
+    int nLen;
 
-    DWORD our_pid = GetCurrentProcessId();
-    DWORD our_tid = GetCurrentThreadId();
+    rh_dialog_template = (DLGTEMPLATE*)malloc(sizeof(DLGTEMPLATE) + 4);
+    memset(rh_dialog_template, 0, sizeof(DLGTEMPLATE) + 4);
+    rh_dialog_template->x = 0;
+    rh_dialog_template->y = 0;
+    rh_dialog_template->cx = RH_DLGWIDTH;
+    rh_dialog_template->cy = RH_DLGHEIGHT;
+    rh_dialog_template->style = WS_CAPTION | WS_VISIBLE | WS_SYSMENU;
 
-    if (Thread32First(hProcess, &te32)) {
-        do {
-            if (te32.th32OwnerProcessID == our_pid && te32.th32ThreadID != our_tid) {
-                HANDLE hThread = OpenThread(THREAD_SUSPEND_RESUME, FALSE, te32.th32ThreadID);
-                if (hThread) {
-                    SuspendThread(hThread);
-                    CloseHandle(hThread);
-                }
-            }
-        } while (Thread32Next(hProcess, &te32));
-    }
-    CloseHandle(hProcess);
+    nLen = MultiByteToWideChar(CP_ACP, 0, "Create Runtime Hook", -1, NULL, 0);
+    lpVoid = malloc(sizeof(DLGTEMPLATE) + 4 + (nLen * 2));
+    memcpy(lpVoid, rh_dialog_template, sizeof(DLGTEMPLATE) + 4 + (nLen * 2));
+    free(rh_dialog_template);
+    rh_dialog_template = (DLGTEMPLATE*)lpVoid;
+
+    lpwsStr = (WCHAR*)malloc(nLen * sizeof(WCHAR));
+    MultiByteToWideChar(CP_ACP, 0, "Create Runtime Hook", -1, lpwsStr, nLen);
+    memcpy((char*)rh_dialog_template + sizeof(DLGTEMPLATE) + 4, lpwsStr, (nLen * 2));
+    free(lpwsStr);
+
+    return 0;
 }
 
-void ResumeAllThreads(void) {
-    HANDLE hProcess = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
-    THREADENTRY32 te32;
-    te32.dwSize = sizeof(THREADENTRY32);
+int init_rh_dlg_ui(HWND hDlg) {
+    HWND ui_hwnd;
+    ui_hwnd = CreateWindow("Button", "Create", WS_CHILD | WS_VISIBLE, 20,  RH_DLGHEIGHT - 30 - 20, 100, 30, hDlg, (HMENU)IDOK, NULL, NULL);
+    ui_hwnd = CreateWindow("Button", "Cancel", WS_CHILD | WS_VISIBLE, 140, RH_DLGHEIGHT - 30 - 20, 100, 30, hDlg, (HMENU)IDCANCEL, NULL, NULL);
 
-    DWORD our_pid = GetCurrentProcessId();
-    DWORD our_tid = GetCurrentThreadId();
-
-    if (Thread32First(hProcess, &te32)) {
-        do {
-            if (te32.th32OwnerProcessID == our_pid && te32.th32ThreadID != our_tid) {
-                HANDLE hThread = OpenThread(THREAD_SUSPEND_RESUME, FALSE, te32.th32ThreadID);
-                if (hThread) {
-                    ResumeThread(hThread);
-                    CloseHandle(hThread);
-                }
-            }
-        } while (Thread32Next(hProcess, &te32));
-    }
-    CloseHandle(hProcess);
+    return 0;
 }
+
+INT_PTR CALLBACK RH_DialogWndProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    RH_Data *rh_data = (RH_Data*)GetWindowLongPtr(hDlg, GWLP_USERDATA);
+    switch (uMsg) {
+    case WM_INITDIALOG:
+    {
+        rh_data = (RH_Data*)lParam;
+        SetWindowLongPtr(hDlg, GWLP_USERDATA, (LONG_PTR)(rh_data));
+        log_msg(LOG_DEBUG, "rh_dlg Param addr: 0x%llX", rh_data->addr);
+
+        RECT dlgRect = { 0, 0, RH_DLGWIDTH, RH_DLGHEIGHT };
+        MapDialogRect(hDlg, &dlgRect);
+        SetWindowPos(hDlg, NULL, 0, 0, dlgRect.right - dlgRect.left, dlgRect.bottom - dlgRect.top, SWP_NOMOVE | SWP_NOZORDER);
+
+        init_rh_dlg_ui(hDlg);
+        // Initialize dialog controls if needed
+        return TRUE;
+    }
+
+    case WM_COMMAND:
+        switch (LOWORD(wParam)) {
+        case IDOK: // Handle "Create" button
+            EndDialog(hDlg, TRUE); // Close dialog and return TRUE
+            return TRUE;
+
+        case IDCANCEL: // Handle "Cancel" button
+            EndDialog(hDlg, FALSE); // Close dialog and return FALSE
+            return TRUE;
+        }
+        break;
+
+    case WM_CLOSE:
+        EndDialog(hDlg, FALSE); // Handle close button
+        return TRUE;
+    }
+    return FALSE;
+}
+
+

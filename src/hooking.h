@@ -8,6 +8,12 @@
 #define HOOKUI_PADDING 10
 
 typedef struct {
+	char *name;
+	char arg_count;
+	uint64_t addr;
+} RH_Data;
+
+typedef struct {
 	char arg_count;
 	char *called_str;
 	int  stackspace;

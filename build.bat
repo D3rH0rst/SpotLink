@@ -4,7 +4,7 @@ if not exist build\ (
 )
 setlocal enabledelayedexpansion
 set "Compiler=gcc"
-set "Wflags=-Wall -Wextra"
+set "Wflags=-Wall -Wextra -Wno-frame-address"
 set "Buildflags=-shared -fPIC" :: debug symbols -g
 set "Outputfile=./build/SpotLink.dll"
 set "Includepaths=-I./include"
