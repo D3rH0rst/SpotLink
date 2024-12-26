@@ -8,9 +8,10 @@
 #define HOOKUI_PADDING 10
 
 typedef struct {
-	char *name;
+	char name[100];
 	char arg_count;
 	uint64_t addr;
+	char start_enabled;
 } RH_Data;
 
 typedef struct {
@@ -24,7 +25,8 @@ typedef struct {
 	uint64_t address;
 	void *hk_func;
 	void **og_func;
-	const char *name;
+	//const char *name;
+	char name[100];
 	char enabled;
 	char created;
 	int called_count;

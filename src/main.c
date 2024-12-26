@@ -4,7 +4,7 @@
 #include <Windows.h>
 #include <TlHelp32.h>
 #include <DbgHelp.h>
-
+#include <CommCtrl.h>
 #include "logging.h"
 
 #include "hooking.h"
@@ -21,8 +21,13 @@
 #define BUTTON_CLEAR (3)
 #define BUTTON_CREATE_RH (4)
 
-#define RH_DLGWIDTH 300
-#define RH_DLGHEIGHT 150
+#define RH_DLGWIDTH 600
+#define RH_DLGHEIGHT 300
+
+#define RH_ID_ADDRESS  (1001)
+#define RH_ID_ARGCOUNT (1002)
+#define RH_ID_HOOKNAME (1003)
+#define RH_ID_STARTENABLED (1004)
 
 HMODULE dll_handle;
 uint64_t spotify_base;
@@ -407,11 +412,16 @@ LRESULT CALLBACK SpotLinkWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
             case BUTTON_CREATE_RH:
             {
                 RH_Data rh_data;
-                rh_data.addr = 0xADD0;
                 INT_PTR result = DialogBoxIndirectParam(NULL, rh_dialog_template, hwnd, RH_DialogWndProc, (LPARAM)(&rh_data));
 
                 if (result == TRUE) { // Create button pressed
-                    log_msg(LOG_DEBUG, "Dialog TRUE result");
+                    log_msg(LOG_DEBUG, "Dialog TRUE result, addr: 0x%llX, args: %d, name: %s, enbl: %d", rh_data.addr, rh_data.arg_count, rh_data.name, rh_data.start_enabled);
+                    Hook *h = make_runtime_hook(rh_data.addr, rh_data.name, rh_data.arg_count, rh_data.start_enabled);
+                    if (!h) {
+                        log_msg(LOG_ERROR, "Failed to create runtime hook at 0x%llX", rh_data.addr);
+                        break;
+                    }
+                    AccordionAddItem(accordion, h, HOOKING_WNDCLASS_NAME, NULL, rh_data.name, 0);
                     // use the rh_data to create the runtime hook
                 }
                 else if (result == FALSE) { // Cancel or close pressed
@@ -449,8 +459,8 @@ int rh_init_dlg(void) {
     memset(rh_dialog_template, 0, sizeof(DLGTEMPLATE) + 4);
     rh_dialog_template->x = 0;
     rh_dialog_template->y = 0;
-    rh_dialog_template->cx = RH_DLGWIDTH;
-    rh_dialog_template->cy = RH_DLGHEIGHT;
+    rh_dialog_template->cx = RH_DLGWIDTH / 2; // divide by two because dlgunits is 2x pixelunits
+    rh_dialog_template->cy = RH_DLGHEIGHT / 2; // divide by two because dlgunits is 2x pixelunits
     rh_dialog_template->style = WS_CAPTION | WS_VISIBLE | WS_SYSMENU;
 
     nLen = MultiByteToWideChar(CP_ACP, 0, "Create Runtime Hook", -1, NULL, 0);
@@ -470,7 +480,43 @@ int rh_init_dlg(void) {
 int init_rh_dlg_ui(HWND hDlg) {
     HWND ui_hwnd;
     ui_hwnd = CreateWindow("Button", "Create", WS_CHILD | WS_VISIBLE, 20,  RH_DLGHEIGHT - 30 - 20, 100, 30, hDlg, (HMENU)IDOK, NULL, NULL);
+    if (!ui_hwnd) {
+        log_msg(LOG_ERROR, "Failed to create Button for dialog: %ld", GetLastError());
+        return 1;
+    }
+    
     ui_hwnd = CreateWindow("Button", "Cancel", WS_CHILD | WS_VISIBLE, 140, RH_DLGHEIGHT - 30 - 20, 100, 30, hDlg, (HMENU)IDCANCEL, NULL, NULL);
+    if (!ui_hwnd) {
+        log_msg(LOG_ERROR, "Failed to create Button for dialog: %ld", GetLastError());
+        return 1;
+    }
+
+    ui_hwnd = CreateWindow("Edit", NULL, WS_CHILD | WS_VISIBLE, 20, 20, 150, 20, hDlg, (HMENU)RH_ID_ADDRESS, NULL, NULL);
+    if (!ui_hwnd) {
+        log_msg(LOG_ERROR, "Failed to create Edit for dialog: %ld", GetLastError());
+        return 1;
+    }
+    SendMessage(ui_hwnd, EM_SETCUEBANNER, (WPARAM)TRUE, (LPARAM)L"Hook Address");
+
+    ui_hwnd = CreateWindow("Edit", NULL, WS_CHILD | WS_VISIBLE | ES_NUMBER, 180, 20, 150, 20, hDlg, (HMENU)RH_ID_ARGCOUNT, NULL, NULL);
+    if (!ui_hwnd) {
+        log_msg(LOG_ERROR, "Failed to create Edit for dialog: %ld", GetLastError());
+        return 1;
+    }
+    SendMessage(ui_hwnd, EM_SETCUEBANNER, (WPARAM)TRUE, (LPARAM)L"Argument count");
+
+    ui_hwnd = CreateWindow("Edit", NULL, WS_CHILD | WS_VISIBLE, 20, 50, 150, 20, hDlg, (HMENU)RH_ID_HOOKNAME, NULL, NULL);
+    if (!ui_hwnd) {
+        log_msg(LOG_ERROR, "Failed to create Edit for dialog: %ld", GetLastError());
+        return 1;
+    }
+    SendMessage(ui_hwnd, EM_SETCUEBANNER, (WPARAM)TRUE, (LPARAM)L"Hook Name");
+
+    ui_hwnd = CreateWindow("Button", "Start Enabled", WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX | BS_RIGHTBUTTON, 180, 50, 150, 20, hDlg, (HMENU)RH_ID_STARTENABLED, NULL, NULL);
+    if (!ui_hwnd) {
+        log_msg(LOG_ERROR, "Failed to create Checkbox for dialog: %ld", GetLastError());
+        return 1;
+    }
 
     return 0;
 }
@@ -482,11 +528,6 @@ INT_PTR CALLBACK RH_DialogWndProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lP
     {
         rh_data = (RH_Data*)lParam;
         SetWindowLongPtr(hDlg, GWLP_USERDATA, (LONG_PTR)(rh_data));
-        log_msg(LOG_DEBUG, "rh_dlg Param addr: 0x%llX", rh_data->addr);
-
-        RECT dlgRect = { 0, 0, RH_DLGWIDTH, RH_DLGHEIGHT };
-        MapDialogRect(hDlg, &dlgRect);
-        SetWindowPos(hDlg, NULL, 0, 0, dlgRect.right - dlgRect.left, dlgRect.bottom - dlgRect.top, SWP_NOMOVE | SWP_NOZORDER);
 
         init_rh_dlg_ui(hDlg);
         // Initialize dialog controls if needed
@@ -496,8 +537,18 @@ INT_PTR CALLBACK RH_DialogWndProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lP
     case WM_COMMAND:
         switch (LOWORD(wParam)) {
         case IDOK: // Handle "Create" button
+        {
+            char addrstr[100];
+            GetDlgItemText(hDlg, RH_ID_ADDRESS, addrstr, sizeof(addrstr));
+
+
+            rh_data->arg_count = GetDlgItemInt(hDlg, RH_ID_ARGCOUNT, NULL, FALSE);
+            rh_data->addr = strtoull(addrstr, NULL, 0);
+            GetDlgItemText(hDlg, RH_ID_HOOKNAME, rh_data->name, sizeof(rh_data->name));
+            rh_data->start_enabled = IsDlgButtonChecked(hDlg, RH_ID_STARTENABLED);
             EndDialog(hDlg, TRUE); // Close dialog and return TRUE
             return TRUE;
+        }
 
         case IDCANCEL: // Handle "Cancel" button
             EndDialog(hDlg, FALSE); // Close dialog and return FALSE

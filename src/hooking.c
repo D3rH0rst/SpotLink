@@ -21,7 +21,7 @@ static inline int ui_create_config_label(HWND hwnd, Hook *h, int *pos_y, int *po
 	int len;
 	SIZE sz;
 	HWND ui_hwnd;
-	len = sprintf(buf, "Hook Config `%s`", h->name);
+	len = snprintf(buf, sizeof(buf), "Hook Config `%s`", h->name);
 	GetTextExtentPoint32(hdc, buf, len, &sz);
 
 	ui_hwnd = CreateWindow(
@@ -217,6 +217,7 @@ LRESULT CALLBACK HookWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 					if ((status = MH_EnableHook((LPVOID)(hook->address))) != MH_OK) {
 						log_msg(LOG_ERROR, "Error enabling hook %s: %s", hook->name, MH_StatusToString(status));
 						PostQuitMessage(1);
+						return 0;
 					}
 					log_msg(LOG_INFO, "Enabled hook %s", hook->name);
 				}
@@ -224,6 +225,7 @@ LRESULT CALLBACK HookWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 					if ((status = MH_DisableHook((LPVOID)(hook->address))) != MH_OK) {
 						log_msg(LOG_ERROR, "Error disabling hook %s: %s", hook->name, MH_StatusToString(status));
 						PostQuitMessage(1);
+						return 0;
 					}
 					log_msg(LOG_INFO, "Disabled hook %s", hook->name);
 				}
@@ -301,7 +303,8 @@ int add_hook(uint64_t address, void *hk_func, void **og_func, const char *name, 
 	h->address = address;
 	h->hk_func = hk_func;
 	h->og_func = og_func;
-	h->name = name;
+	//h->name = name;
+	snprintf(h->name, sizeof(h->name), "%s", name);
 	h->enabled = start_enabled;
 
 	MH_STATUS status;
@@ -395,7 +398,8 @@ void print_caller(void) {
 Hook *make_runtime_hook(uint64_t addr, const char *name, int argcount, char start_enabled) {
 	Hook *h = &hooks[hooks_size];
 	h->address = addr;
-	h->name = name;
+	//h->name = name;
+	snprintf(h->name, sizeof(h->name), "%s", name);
 	h->runtime_hook = malloc(sizeof(RuntimeHook));
 	if (!h->runtime_hook) {
 		log_msg(LOG_ERROR, "Failed to allocate memory for RuntimeHook");
@@ -430,6 +434,7 @@ Hook *make_runtime_hook(uint64_t addr, const char *name, int argcount, char star
 			free(h->runtime_hook);
 			return NULL;
 		}
+		h->enabled = 1;
 	}
 
 	hooks_size++;
