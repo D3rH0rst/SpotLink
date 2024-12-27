@@ -3,6 +3,96 @@
 
 #define GUID_FORMAT "{%08lX-%04hX-%04hX-%02hhX%02hhX-%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX}"
 
+BOOL show_spotify_log = FALSE;
+
+
+Hook *hk_logging = NULL;
+void(*og_logging_func)(int a1, int a2, int a3, const char *a4, ...) = NULL;
+void hk_logging_func(int a1, int a2, int a3, const char *a4, ...) {
+	hook_called_callback(hk_logging);
+
+	if (show_spotify_log) {
+		va_list va;
+		va_start(va, a4);
+
+		char formatted_message[256];
+		vsnprintf(formatted_message, sizeof(formatted_message), a4, va);
+
+		log_sep();
+		log_msg(LOG_INFO, "Spotify log: a1: %d, a2: %d, a3: %d | %s |", a1, a2, a3, formatted_message);
+		log_sep();
+		va_end(va);
+	}
+
+	//va_start(va, a4);
+	//og_logging_func(a1, a2, a3, a4, va_arg(va, void*));
+	//va_end(va);
+}
+
+
+Hook *hk_event = NULL;
+void *(__fastcall *og_event_func)(uint64_t *a1, void *a2, size_t *a3, int64_t a4) = NULL;
+void *__fastcall hk_event_func(uint64_t *a1, void *a2, size_t *a3, int64_t a4) {
+	hook_called_callback(hk_event);
+	log_sep();
+	log_msg(LOG_INFO, "Called `char hk_event_func(0x%llX, 0x%llX, 0x%llX, 0x%llX)`", a1, a2, a3, a4);
+	print_caller();
+	void *ret = og_event_func(a1, a2, a3, a4);
+	log_msg(LOG_INFO, "ret = 0x%llX", (uint64_t)ret);
+	log_sep();
+	return a2;
+}
+
+Hook *hk_new_pause = NULL;
+int64_t(__fastcall *og_new_pause_func)(int64_t **a1, int a2) = NULL;
+int64_t __fastcall hk_new_pause_func(int64_t **a1, int a2) {
+	
+	hook_called_callback(hk_new_pause);
+	log_sep();
+	log_msg(LOG_INFO, "Called `int64_t hk_new_pause_func(0x%llX, %d)`", a1, a2);
+	print_caller();
+	int64_t ret = og_new_pause_func(a1, a2);
+	log_msg(LOG_INFO, "ret (void) = 0x%llX", ret);
+	log_sep();
+	return ret;
+}
+
+Hook *hk_task_event = NULL;
+void(__fastcall *og_task_event_func)(int64_t ***a1, int a2) = NULL;
+void __fastcall hk_task_event_func(int64_t ***a1, int a2) {
+	hook_called_callback(hk_new_pause);
+	log_sep();
+	log_msg(LOG_INFO, "Called `void hk_task_event_func(0x%llX, %d)`", a1, a2);
+	print_caller();
+	og_task_event_func(a1, a2);
+	//log_msg(LOG_INFO, "ret (void) = 0x%llX", ret);
+	log_sep();
+	//return ret;
+}
+
+Hook *hk_new_song =  NULL;
+int64_t(__fastcall *og_new_song_func)(int64_t a1, uint64_t *a2, int64_t a3, int64_t a4, int64_t a5) = NULL;
+int64_t __fastcall hk_new_song_func(int64_t a1, uint64_t *a2, int64_t a3, int64_t a4, int64_t a5) {
+	hook_called_callback(hk_new_song);
+	log_sep();
+	log_msg(LOG_INFO, "Called `int64_t hk_new_son_func(0x%llX, 0x%llX, 0x%llX, 0x%llX, 0x%llX)`", a1, a2, a3, a4, a5);
+	print_caller();
+	const char *v10 = (const char*)a2;
+	if ((uint64_t)a2[3] >= 0x10)
+		v10 = *(const char **)a2;
+	log_msg(LOG_INFO, "Play Song, ID: %s", v10);
+	//show_spotify_log = TRUE;
+	int64_t ret = og_new_song_func(a1, a2, a3, a4, a5);
+	//show_spotify_log = FALSE;
+	
+	log_msg(LOG_INFO, "ret = 0x%llX", ret);
+	log_sep();
+
+	return ret;
+}
+
+
+
 Hook *hk_pause = NULL;
 int64_t(__fastcall *og_pause_func)(int64_t a1, ULONG_PTR a2, int64_t a3) = NULL;
 int64_t __fastcall hk_pause_func(int64_t a1, ULONG_PTR a2, int64_t a3) {

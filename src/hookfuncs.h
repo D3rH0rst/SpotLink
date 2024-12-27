@@ -5,6 +5,42 @@
 #include <inttypes.h>
 #include "hooking.h"
 
+
+
+#define OFF_LOGGING_FUNC 0x1314240
+//void sub_141314240(int a1, int a2, int a3, __int64 a4, ...)
+extern Hook *hk_logging;
+extern void(*og_logging_func)(int a1, int a2, int a3, const char *a4, ...);
+void hk_logging_func(int a1, int a2, int a3, const char *a4, ...);
+
+
+// maybe interesting event func
+//void *__fastcall sub_140507464(_QWORD *a1, void *a2, size_t *a3, __int64 a4)
+
+#define OFF_EVENT_FUNC 0x507464
+//void *__fastcall sub_140507464(_QWORD *a1, void *a2, size_t *a3, __int64 a4)
+extern Hook *hk_event;
+extern void*(__fastcall *og_event_func)(uint64_t *a1, void *a2, size_t *a3, int64_t a4);
+void *__fastcall hk_event_func(uint64_t *a1, void *a2, size_t *a3, int64_t a4);
+
+#define OFF_TASK_EVENT_FUNC 0x151EB0
+//void __fastcall sub_140151EB0(__int64 ***a1, int a2)
+extern Hook *hk_task_event;
+extern void(__fastcall *og_task_event_func)(int64_t ***a1, int a2);
+void __fastcall hk_task_event_func(int64_t ***a1, int a2);
+
+#define OFF_NEW_PAUSE_FUNC 0x15EF90
+//void __fastcall sub_14015EF90(__int64 **a1, int a2)
+extern Hook *hk_new_pause;
+extern int64_t(__fastcall *og_new_pause_func)(int64_t **a1, int a2);
+int64_t __fastcall hk_new_pause_func(int64_t **a1, int a2);
+
+#define OFF_NEW_SONG_FUNC 0x59FCD4
+//__int64 __fastcall sub_14059FCD4(__int64 a1, _QWORD *a2, __int64 a3, __int64 a4, __int64 a5)
+extern Hook *hk_new_song;
+extern int64_t(__fastcall *og_new_song_func)(int64_t a1, uint64_t *a2, int64_t a3, int64_t a4, int64_t a5);
+int64_t __fastcall hk_new_song_func(int64_t a1, uint64_t *a2, int64_t a3, int64_t a4, int64_t a5);
+
 #define SIG_PAUSE_FUNC "40 55 53 56 57 41 54 41 56 41 57 48 8D AC 24 10 FC FF FF 48 81 EC F0 04 00 00 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 85 E0 03 00 00 4D 8B F8 48 8B F2 4C 8B F1 48 89 55 40 48 8D 4D 20 E8 ?? ?? ?? ?? 48 8B D8 45 33 E4 44 88 64 24 78 48 8B D0 48 8D 4D 80 E8 ?? ?? ?? ?? 44 88 65 A4 44 88 65 AC 44 88 65 B4 44 88 65 E0 44 88 65 10 44 88 65 1C 48 8B CB E8 ?? ?? ?? ?? 90 49 8D 86 E0 FC FF FF 48 89 45 50 48 8D 4D 58 48 89 4C 24 20 4C 89 A5 90 00 00 00 49 8B 8E 20 FF FF FF 48 85 C9 74 14 48 8B 01 48 8D 55 58 FF 10 48 89 85 90 00 00 00 48 8B 45 50 48 FF 80 88 00 00 00 49 8B BE 50 FF FF FF 48 8B 07 48 8B 98 18 01 00 00 49 8B 8E F8 FD FF FF 48 8B 01 48 8D 95 A0 00 00 00 FF 50 ?? 90 48 8B D0 48 8B CF FF D3 90 44 38 A5 D0 03 00 00 74 0C 48 8D 8D 18 01 00 00 E8 ?? ?? ?? ?? 49 8D 8E 38 FC FF FF 48 89 4C 24 20 48 89 74 24 28 48 8D 05 ?? ?? ?? ?? 48 89 44 24 30 0F 10 44 24 20 F3 0F 7F 44 24 38 48 8D 44 24 30 48 89 44 24 68 4C 8D 44 24 30 48 8D 95 A0 00 00 00 E8 ?? ?? ?? ?? 48 8B D0 48 8D 4C 24 70 E8 ?? ?? ?? ?? 44 38 A5 40 01 00 00 74 0E 33 D2 48 8D 8D 18 01 00 00 E8 ?? ?? ?? ?? 44 38 A5 10 01 00 00 74 0E 33 D2 48 8D 8D E8 00 00 00 E8 ?? ?? ?? ?? 48 8D 8D B0 00 00 00 E8 ?? ?? ?? ?? 90 48 8D 4D 50 E8 ?? ?? ?? ?? 49 8B 4F 38 48 85 C9 74 60 48 8B 01 48 8D 55 80 FF 50 ?? 90 44 38 65 10 74 0B 33 D2 48 8D 4D E8 E8 ?? ?? ?? ?? 44 38 65 E0 74 0B 33 D2 48 8D 4D B8 E8 ?? ?? ?? ?? 48 8D 4D 80 E8 ?? ?? ?? ?? 90 48 8B CE E8 ?? ?? ?? ?? 48 8B 8D E0 03 00 00 48 33 CC E8 ?? ?? ?? ?? 48 81 C4 F0 04 00 00 41 5F 41 5E 41 5C 5F 5E 5B 5D C3 E8 ?? ?? ?? ??"
 //__int64 __fastcall sub_140583698(__int64 a1, ULONG_PTR a2, __int64 a3)
 extern Hook *hk_pause;

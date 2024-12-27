@@ -305,25 +305,40 @@ int init_hooks(void) {
 
     if (init_hooking((HINSTANCE)spotify_base) != 0) return 1;
 
-    uint64_t pause_addr    = scan_pattern   ((HINSTANCE)spotify_base, SIG_PAUSE_FUNC   );
-    uint64_t play_addr     = scan_pattern_ex((HINSTANCE)spotify_base, SIG_PLAY_FUNC,  1);
-    uint64_t next_addr     = scan_pattern   ((HINSTANCE)spotify_base, SIG_NEXT_FUNC    );
-    uint64_t prev_addr     = scan_pattern   ((HINSTANCE)spotify_base, SIG_PREV_FUNC    );
-    uint64_t seek_addr     = scan_pattern   ((HINSTANCE)spotify_base, SIG_SEEK_FUNC    );
-    uint64_t song_addr     = scan_pattern   ((HINSTANCE)spotify_base, SIG_SONG_FUNC    );
-    uint64_t repeat_addr   = scan_pattern   ((HINSTANCE)spotify_base, SIG_REPEAT_FUNC  );
-    uint64_t shuffle1_addr = scan_pattern   ((HINSTANCE)spotify_base, SIG_SHUFFLE1_FUNC);
-    uint64_t shuffle2_addr = scan_pattern   ((HINSTANCE)spotify_base, SIG_SHUFFLE2_FUNC);
+    uint64_t logging_addr = spotify_base + OFF_LOGGING_FUNC;
 
-    add_hook(pause_addr,    hk_pause_func,    (void**)(&og_pause_func),    "pause_func",    1, &hk_pause   );
-    add_hook(play_addr,     hk_play_func,     (void**)(&og_play_func),     "play_func",     1, &hk_play    );
-    add_hook(next_addr,     hk_next_func,     (void**)(&og_next_func),     "next_func",     1, &hk_next    );
-    add_hook(prev_addr,     hk_prev_func,     (void**)(&og_prev_func),     "prev_func",     1, &hk_prev    );
-    add_hook(seek_addr,     hk_seek_func,     (void**)(&og_seek_func),     "seek_func",     1, &hk_seek    );
-    add_hook(song_addr,     hk_song_func,     (void**)(&og_song_func),     "song_func",     1, &hk_song    );
-    add_hook(repeat_addr,   hk_repeat_func,   (void**)(&og_repeat_func),   "repeat_func",   1, &hk_repeat  );
-    add_hook(shuffle1_addr, hk_shuffle1_func, (void**)(&og_shuffle1_func), "shuffle1_func", 1, &hk_shuffle1);
-    add_hook(shuffle2_addr, hk_shuffle2_func, (void**)(&og_shuffle2_func), "shuffle2_func", 1, &hk_shuffle2);
+    //uint64_t event_addr = spotify_base + OFF_EVENT_FUNC;
+    //uint64_t new_pause_addr = spotify_base + OFF_NEW_PAUSE_FUNC;
+    //uint64_t task_event_addr = spotify_base + OFF_TASK_EVENT_FUNC;
+
+    uint64_t new_song_addr = spotify_base + OFF_NEW_SONG_FUNC;
+
+    // uint64_t pause_addr    = scan_pattern   ((HINSTANCE)spotify_base, SIG_PAUSE_FUNC   );
+    // uint64_t play_addr     = scan_pattern_ex((HINSTANCE)spotify_base, SIG_PLAY_FUNC,  1);
+    // uint64_t next_addr     = scan_pattern   ((HINSTANCE)spotify_base, SIG_NEXT_FUNC    );
+    // uint64_t prev_addr     = scan_pattern   ((HINSTANCE)spotify_base, SIG_PREV_FUNC    );
+    // uint64_t seek_addr     = scan_pattern   ((HINSTANCE)spotify_base, SIG_SEEK_FUNC    );
+    //uint64_t song_addr     = scan_pattern   ((HINSTANCE)spotify_base, SIG_SONG_FUNC    );
+    //uint64_t repeat_addr   = scan_pattern   ((HINSTANCE)spotify_base, SIG_REPEAT_FUNC  );
+    //uint64_t shuffle1_addr = scan_pattern   ((HINSTANCE)spotify_base, SIG_SHUFFLE1_FUNC);
+    //uint64_t shuffle2_addr = scan_pattern   ((HINSTANCE)spotify_base, SIG_SHUFFLE2_FUNC);
+
+    add_hook(logging_addr, hk_logging_func, (void**)(&og_logging_func), "logging_func", 1, &hk_logging);
+
+    //add_hook(event_addr,    hk_event_func,    (void**)(&og_event_func),    "event_func",    1, &hk_event   );
+    //add_hook(new_pause_addr,    hk_new_pause_func,    (void**)(&og_new_pause_func),    "new_pause_func",    1, &hk_new_pause   );
+    //add_hook(task_event_addr, hk_task_event_func, (void**)(&og_task_event_func), "task_event_func", 1, &hk_task_event);
+    add_hook(new_song_addr, hk_new_song_func, (void**)(&og_new_song_func), "new_song_func", 1, &hk_new_song);
+
+    // add_hook(pause_addr,    hk_pause_func,    (void**)(&og_pause_func),    "pause_func",    1, &hk_pause   );
+    // add_hook(play_addr,     hk_play_func,     (void**)(&og_play_func),     "play_func",     1, &hk_play    );
+    // add_hook(next_addr,     hk_next_func,     (void**)(&og_next_func),     "next_func",     1, &hk_next    );
+    // add_hook(prev_addr,     hk_prev_func,     (void**)(&og_prev_func),     "prev_func",     1, &hk_prev    );
+    // add_hook(seek_addr,     hk_seek_func,     (void**)(&og_seek_func),     "seek_func",     1, &hk_seek    );
+    //add_hook(song_addr,     hk_song_func,     (void**)(&og_song_func),     "song_func",     1, &hk_song    );
+    //add_hook(repeat_addr,   hk_repeat_func,   (void**)(&og_repeat_func),   "repeat_func",   1, &hk_repeat  );
+    //add_hook(shuffle1_addr, hk_shuffle1_func, (void**)(&og_shuffle1_func), "shuffle1_func", 1, &hk_shuffle1);
+    //add_hook(shuffle2_addr, hk_shuffle2_func, (void**)(&og_shuffle2_func), "shuffle2_func", 1, &hk_shuffle2);
    
     int hooks_size;
     Hook *hooks = get_hooks(&hooks_size);

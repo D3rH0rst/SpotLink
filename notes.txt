@@ -1,0 +1,2 @@
+Pause through taskbar func offset: 0x15F9DE
+normally through app: 0x5011A1

@@ -373,6 +373,8 @@ void print_caller(void) {
 	uint64_t caller_entry;
 	uint64_t caller_base;
 	PRUNTIME_FUNCTION runtime_function;
+	char module_name[MAX_PATH];
+	HMODULE m;
 	
 	caller = (uint64_t)__builtin_return_address(1);
 	if (caller) {
@@ -383,11 +385,9 @@ void print_caller(void) {
 		else {
 			caller_entry = caller_base + runtime_function->BeginAddress;
 		}
-		HMODULE m;
-		char module_name[MAX_PATH];
 		GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCSTR)caller, &m);
 		GetModuleFileName(m, module_name, sizeof(module_name));
-		log_msg(LOG_INFO, "Function caller: %s!0x%llX (OFF: 0x%llX, Entry: 0x%llX)",
+		log_msg(LOG_INFO, "(level 1) Function caller: %s!0x%llX (OFF: 0x%llX, Entry: 0x%llX)",
 			strrchr(module_name, '\\') + 1,
 			caller, caller - (uint64_t)m,
 			caller_entry
