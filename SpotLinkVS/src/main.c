@@ -15,12 +15,11 @@
 
 #include <CustomControls.h>
 
-//#include <Richedit.h>
-
 #define BUTTON_PLAY  (1)
 #define BUTTON_PAUSE (2)
 #define BUTTON_CLEAR (3)
 #define BUTTON_CREATE_RH (4)
+#define BUTTON_TOGGLE_SP_LOG (5)
 
 #define RH_DLGWIDTH 600
 #define RH_DLGHEIGHT 300
@@ -266,6 +265,17 @@ int init_ui(HWND hwnd) {
         NULL, NULL
     );
 
+    CreateWindow(
+        TEXT("Button"),
+        TEXT("SP Logging"),
+        WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX,
+        310, 90,
+        90, 20,
+        hwnd,
+        (HMENU)BUTTON_TOGGLE_SP_LOG,
+        NULL, NULL
+    );
+
     accordion = AccordionCreate(
         window_width / 2, 0,
         window_width / 2, window_height / 2,
@@ -307,7 +317,7 @@ int init_hooks(void) {
 
     if (init_hooking((HINSTANCE)spotify_base) != 0) return 1;
 
-    uint64_t logging_addr = spotify_base + OFF_LOGGING_FUNC;
+    uint64_t logging_addr = scan_pattern((HINSTANCE)spotify_base, SIG_LOGGING_FUNC);
 
     //uint64_t event_addr = spotify_base + OFF_EVENT_FUNC;
     //uint64_t new_pause_addr = spotify_base + OFF_NEW_PAUSE_FUNC;
@@ -325,7 +335,7 @@ int init_hooks(void) {
     //uint64_t shuffle1_addr = scan_pattern   ((HINSTANCE)spotify_base, SIG_SHUFFLE1_FUNC);
     //uint64_t shuffle2_addr = scan_pattern   ((HINSTANCE)spotify_base, SIG_SHUFFLE2_FUNC);
 
-    //add_hook(logging_addr, hk_logging_func, (void**)(&og_logging_func), "logging_func", 1, &hk_logging);
+    add_hook(logging_addr, hk_logging_func, (void**)(&og_logging_func), "logging_func", 1, &hk_logging);
 
     //add_hook(event_addr,    hk_event_func,    (void**)(&og_event_func),    "event_func",    1, &hk_event   );
     //add_hook(new_pause_addr,    hk_new_pause_func,    (void**)(&og_new_pause_func),    "new_pause_func",    1, &hk_new_pause   );
@@ -426,6 +436,9 @@ LRESULT CALLBACK SpotLinkWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
             SetWindowText(debug_label_hwnd, buf);
             break;
         }
+        case BUTTON_TOGGLE_SP_LOG:
+            show_spotify_log = !show_spotify_log;
+            break;
         case BUTTON_CREATE_RH:
         {
             RH_Data rh_data = { 0 };

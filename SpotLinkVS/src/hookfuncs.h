@@ -5,9 +5,10 @@
 #include "hooking.h"
 
 
-
-#define OFF_LOGGING_FUNC 0x1314240
-//void sub_141314240(int a1, int a2, int a3, __int64 a4, ...)
+extern BOOL show_spotify_log;
+//#define OFF_LOGGING_FUNC 0x1314240
+#define SIG_LOGGING_FUNC "4C 8B DC 4D 89 4B 20 53 56"
+//void sub_14135055C(int a1, int a2, int a3, const char* a4, ...)
 extern Hook* hk_logging;
 extern void(*og_logging_func)(int a1, int a2, int a3, const char* a4, ...);
 void hk_logging_func(int a1, int a2, int a3, const char* a4, ...);
