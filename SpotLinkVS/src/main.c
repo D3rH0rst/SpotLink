@@ -6,13 +6,14 @@
 #include <DbgHelp.h>
 #include <CommCtrl.h>
 #include "logging.h"
+#include <tchar.h>
 
 #include "hooking.h"
 #include "hookfuncs.h"
 
 #include "sigscanner.h"
 
-#include <Win32CustomControls/CustomControls.h>
+#include <CustomControls.h>
 
 //#include <Richedit.h>
 
@@ -45,11 +46,11 @@ HWND spotlink_hwnd;
 HWND spotlink_log_hwnd;
 HWND debug_label_hwnd;
 
-Accordion *accordion;
+Accordion* accordion;
 
-DLGTEMPLATE *rh_dialog_template;
+DLGTEMPLATE* rh_dialog_template;
 
-const char* wndclass_name = "SpotLinkWndClass";
+const TCHAR* wndclass_name = TEXT("SpotLinkWndClass");
 const int window_width = 1280;
 const int window_height = 720;
 
@@ -63,7 +64,7 @@ int init_console(void);
 int init_logfile(void);
 #endif
 int init_window();
-void log_msg_wrapper(const char *format, ...);
+void log_msg_wrapper(const TCHAR* format, ...);
 int init_ui(HWND hwnd);
 int init_hooks(void);
 int rh_init_dlg(void);
@@ -78,10 +79,10 @@ LRESULT CALLBACK RH_DialogWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
     UNREFERENCED_PARAMETER(lpvReserved);
     switch (fdwReason) {
-        case DLL_PROCESS_ATTACH:
-            dll_handle = hinstDLL;
-            CreateThread(NULL, 0, Main, NULL, 0, 0);
-            break;
+    case DLL_PROCESS_ATTACH:
+        dll_handle = hinstDLL;
+        CreateThread(NULL, 0, Main, NULL, 0, 0);
+        break;
     }
 
     return TRUE;
@@ -89,6 +90,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
 
 DWORD WINAPI Main(LPVOID lpParameter) {
     UNREFERENCED_PARAMETER(lpParameter);
+
 
     if (init_main() != 0) {
         cleanup();
@@ -109,8 +111,8 @@ DWORD WINAPI Main(LPVOID lpParameter) {
 int init_main(void) {
     spotify_base = (uint64_t)GetModuleHandle(NULL);
     if (!spotify_base) return 1;
-    
-    libcef_base = (uint64_t)GetModuleHandle("libcef.dll");
+
+    libcef_base = (uint64_t)GetModuleHandle(TEXT("libcef.dll"));
     if (!libcef_base) return 1;
 
 #ifdef CONSOLE
@@ -136,7 +138,7 @@ int init_main(void) {
 int init_console(void) {
     if (!AllocConsole()) return 1;
     freopen_s(&console, "CONOUT$", "w", stdout);
-
+    if (!console) return 1;
     if (ferror(console)) return 1;
 
     return 0;
@@ -173,7 +175,7 @@ int init_window(void) {
 
     spotlink_hwnd = CreateWindow(
         wndclass_name,
-        "SpotLink",
+        TEXT("SpotLink"),
         WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU | WS_VISIBLE,
         CW_USEDEFAULT, CW_USEDEFAULT,
         wr.right - wr.left, wr.bottom - wr.top,
@@ -193,8 +195,8 @@ int init_window(void) {
 
 int init_ui(HWND hwnd) {
     spotlink_log_hwnd = CreateWindow(
-        "Edit",
-        "", 
+        TEXT("Edit"),
+        "",
         WS_CHILD | WS_BORDER | WS_VISIBLE | WS_VSCROLL | ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY,
         0, window_height / 2,
         window_width, window_height / 2,
@@ -210,8 +212,8 @@ int init_ui(HWND hwnd) {
     set_log_window(&spotlink_log_hwnd);
 
     CreateWindow(
-        "Button",
-        "Play",
+        TEXT("Button"),
+        TEXT("Play"),
         WS_VISIBLE | WS_CHILD,
         50, 50,
         60, 20,
@@ -220,8 +222,8 @@ int init_ui(HWND hwnd) {
     );
 
     CreateWindow(
-        "Button",
-        "Pause",
+        TEXT("Button"),
+        TEXT("Pause"),
         WS_VISIBLE | WS_CHILD,
         50, 90,
         60, 20,
@@ -231,8 +233,8 @@ int init_ui(HWND hwnd) {
 
     // DEBUG
     CreateWindow(
-        "Button",
-        "Create RuntimeHook",
+        TEXT("Button"),
+        TEXT("Create RuntimeHook"),
         WS_VISIBLE | WS_CHILD,
         50, 120,
         200, 30,
@@ -242,8 +244,8 @@ int init_ui(HWND hwnd) {
     //
 
     debug_label_hwnd = CreateWindow(
-        "Static",
-        "DebugLog length: 0",
+        TEXT("Static"),
+        TEXT("DebugLog length: 0"),
         WS_VISIBLE | WS_CHILD,
         200, 50,
         200, 30,
@@ -254,8 +256,8 @@ int init_ui(HWND hwnd) {
     set_debug_label(&debug_label_hwnd);
 
     CreateWindow(
-        "Button",
-        "Clear Log",
+        TEXT("Button"),
+        TEXT("Clear Log"),
         WS_VISIBLE | WS_CHILD,
         200, 90,
         100, 20,
@@ -281,23 +283,23 @@ int init_ui(HWND hwnd) {
 
 #ifdef LOGFILE
 int init_logfile(void) {
-    logfile = fopen(logfile_path, "w");
-    if (!logfile) {
+    
+    if (fopen_s(&logfile, logfile_path, "w")) {
         log_msg(LOG_ERROR, "Failed to open logfile at path %s", logfile_path);
         return 1;
     }
-    
+
     time_t t = time(NULL);
-    struct tm *tm = localtime(&t);
-    fprintf(logfile, "SPOTLINK %02d-%02d-%d %02d:%02d:%02d\n\n", tm->tm_mday, tm->tm_mon + 1, tm->tm_year + 1900, tm->tm_hour, tm->tm_min, tm->tm_sec);
-    
+    struct tm* tm = localtime(&t);
+    _ftprintf(logfile, TEXT("SPOTLINK %02d-%02d-%d %02d:%02d:%02d\n\n"), tm->tm_mday, tm->tm_mon + 1, tm->tm_year + 1900, tm->tm_hour, tm->tm_min, tm->tm_sec);
+
     set_log_file(logfile);
-    
+
     return 0;
 }
 #endif
 
-const char *hook_text_cb(void* hook) {
+const TCHAR* hook_text_cb(void* hook) {
     return ((Hook*)hook)->name;
 }
 
@@ -323,12 +325,12 @@ int init_hooks(void) {
     //uint64_t shuffle1_addr = scan_pattern   ((HINSTANCE)spotify_base, SIG_SHUFFLE1_FUNC);
     //uint64_t shuffle2_addr = scan_pattern   ((HINSTANCE)spotify_base, SIG_SHUFFLE2_FUNC);
 
-    add_hook(logging_addr, hk_logging_func, (void**)(&og_logging_func), "logging_func", 1, &hk_logging);
+    //add_hook(logging_addr, hk_logging_func, (void**)(&og_logging_func), "logging_func", 1, &hk_logging);
 
     //add_hook(event_addr,    hk_event_func,    (void**)(&og_event_func),    "event_func",    1, &hk_event   );
     //add_hook(new_pause_addr,    hk_new_pause_func,    (void**)(&og_new_pause_func),    "new_pause_func",    1, &hk_new_pause   );
     //add_hook(task_event_addr, hk_task_event_func, (void**)(&og_task_event_func), "task_event_func", 1, &hk_task_event);
-    add_hook(new_song_addr, hk_new_song_func, (void**)(&og_new_song_func), "new_song_func", 1, &hk_new_song);
+    //add_hook(new_song_addr, hk_new_song_func, (void**)(&og_new_song_func), "new_song_func", 1, &hk_new_song);
 
     // add_hook(pause_addr,    hk_pause_func,    (void**)(&og_pause_func),    "pause_func",    1, &hk_pause   );
     // add_hook(play_addr,     hk_play_func,     (void**)(&og_play_func),     "play_func",     1, &hk_play    );
@@ -339,9 +341,9 @@ int init_hooks(void) {
     //add_hook(repeat_addr,   hk_repeat_func,   (void**)(&og_repeat_func),   "repeat_func",   1, &hk_repeat  );
     //add_hook(shuffle1_addr, hk_shuffle1_func, (void**)(&og_shuffle1_func), "shuffle1_func", 1, &hk_shuffle1);
     //add_hook(shuffle2_addr, hk_shuffle2_func, (void**)(&og_shuffle2_func), "shuffle2_func", 1, &hk_shuffle2);
-   
+
     int hooks_size;
-    Hook *hooks = get_hooks(&hooks_size);
+    Hook* hooks = get_hooks(&hooks_size);
     if (AccordionAddItemArray(accordion, hooks, hooks_size, sizeof(*hooks), HOOKING_WNDCLASS_NAME, NULL, hook_text_cb, 0) != 0) {
         log_msg(LOG_ERROR, "Failed to add item array to accordion");
         return 1;
@@ -406,47 +408,47 @@ LRESULT CALLBACK SpotLinkWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
         break;
     case WM_COMMAND:
         switch (wParam) {
-            case BUTTON_PLAY:
-                log_msg(LOG_INFO, "Play button pressed");
-                //hk_esperanto_pause();
-                //hk_resume_func(0x1bfc08abf40, 0, 0x9888bfd5c0);
-                break;
-            case BUTTON_PAUSE:
-                log_msg(LOG_INFO, "Pause button pressed");
-                //hk_resume_func(0x1bfc08abf40, 1, 0x9888bfdcc0);
-                break;
-            case BUTTON_CLEAR:
-            {
-                SendMessage(spotlink_log_hwnd, WM_SETTEXT, (WPARAM)0, (LPARAM)"");
-                int log_length = GetWindowTextLength(spotlink_log_hwnd);
-                char buf[50];
-                sprintf(buf, "DebugLog length: %d", log_length);
-                SetWindowText(debug_label_hwnd, buf);
-                break;
-            }
-            case BUTTON_CREATE_RH:
-            {
-                RH_Data rh_data;
-                INT_PTR result = DialogBoxIndirectParam(NULL, rh_dialog_template, hwnd, RH_DialogWndProc, (LPARAM)(&rh_data));
+        case BUTTON_PLAY:
+            log_msg(LOG_INFO, "Play button pressed");
+            //hk_esperanto_pause();
+            //hk_resume_func(0x1bfc08abf40, 0, 0x9888bfd5c0);
+            break;
+        case BUTTON_PAUSE:
+            log_msg(LOG_INFO, "Pause button pressed");
+            //hk_resume_func(0x1bfc08abf40, 1, 0x9888bfdcc0);
+            break;
+        case BUTTON_CLEAR:
+        {
+            SendMessage(spotlink_log_hwnd, WM_SETTEXT, (WPARAM)0, (LPARAM)"");
+            int log_length = GetWindowTextLength(spotlink_log_hwnd);
+            TCHAR buf[50];
+            _stprintf_s(buf, sizeof(buf) / sizeof(*buf), TEXT("DebugLog length: %d"), log_length);
+            SetWindowText(debug_label_hwnd, buf);
+            break;
+        }
+        case BUTTON_CREATE_RH:
+        {
+            RH_Data rh_data = { 0 };
+            INT_PTR result = DialogBoxIndirectParam(NULL, rh_dialog_template, hwnd, RH_DialogWndProc, (LPARAM)(&rh_data));
 
-                if (result == TRUE) { // Create button pressed
-                    log_msg(LOG_DEBUG, "Dialog TRUE result, addr: 0x%llX, args: %d, name: %s, enbl: %d", rh_data.addr, rh_data.arg_count, rh_data.name, rh_data.start_enabled);
-                    Hook *h = make_runtime_hook(rh_data.addr, rh_data.name, rh_data.arg_count, rh_data.start_enabled);
-                    if (!h) {
-                        log_msg(LOG_ERROR, "Failed to create runtime hook at 0x%llX", rh_data.addr);
-                        break;
-                    }
-                    AccordionAddItem(accordion, h, HOOKING_WNDCLASS_NAME, NULL, rh_data.name, 0);
-                    // use the rh_data to create the runtime hook
+            if (result == TRUE) { // Create button pressed
+                log_msg(LOG_DEBUG, "Dialog TRUE result, addr: 0x%llX, args: %d, name: %s, enbl: %d", rh_data.addr, rh_data.arg_count, rh_data.name, rh_data.start_enabled);
+                Hook* h = make_runtime_hook(rh_data.addr, rh_data.name, rh_data.arg_count, rh_data.start_enabled);
+                if (!h) {
+                    log_msg(LOG_ERROR, "Failed to create runtime hook at 0x%llX", rh_data.addr);
+                    break;
                 }
-                else if (result == FALSE) { // Cancel or close pressed
-                    log_msg(LOG_DEBUG, "Dialog FALSE result");
-                }
-                else {
-                    log_msg(LOG_ERROR, "Some error occured in DialogBoxIndirectParam: %d, %ld", result, GetLastError());
-                }
-                break;
+                AccordionAddItem(accordion, h, HOOKING_WNDCLASS_NAME, NULL, rh_data.name, 0);
+                // use the rh_data to create the runtime hook
             }
+            else if (result == FALSE) { // Cancel or close pressed
+                log_msg(LOG_DEBUG, "Dialog FALSE result");
+            }
+            else {
+                log_msg(LOG_ERROR, "Some error occured in DialogBoxIndirectParam: %d, %ld", result, GetLastError());
+            }
+            break;
+        }
         }
         break;
     default:
@@ -458,10 +460,10 @@ LRESULT CALLBACK SpotLinkWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-void log_msg_wrapper(const char *format, ...) {
+void log_msg_wrapper(const TCHAR* format, ...) {
     va_list args;
     va_start(args, format);
-    log_msg(LOG_INFO, format, args);
+    _log_msg(LOG_INFO, format, args);
     va_end(args);
 }
 
@@ -471,6 +473,10 @@ int rh_init_dlg(void) {
     int nLen;
 
     rh_dialog_template = (DLGTEMPLATE*)malloc(sizeof(DLGTEMPLATE) + 4);
+    if (rh_dialog_template == NULL) {
+        log_msg(LOG_ERROR, "Failed to allocate memory for dialog template");
+        return 1;
+    }
     memset(rh_dialog_template, 0, sizeof(DLGTEMPLATE) + 4);
     rh_dialog_template->x = 0;
     rh_dialog_template->y = 0;
@@ -480,11 +486,19 @@ int rh_init_dlg(void) {
 
     nLen = MultiByteToWideChar(CP_ACP, 0, "Create Runtime Hook", -1, NULL, 0);
     lpVoid = malloc(sizeof(DLGTEMPLATE) + 4 + (nLen * 2));
+    if (lpVoid == NULL) {
+        log_msg(LOG_ERROR, "Failed to allocate memory for lpVoid");
+        return 1;
+    }
     memcpy(lpVoid, rh_dialog_template, sizeof(DLGTEMPLATE) + 4 + (nLen * 2));
     free(rh_dialog_template);
     rh_dialog_template = (DLGTEMPLATE*)lpVoid;
 
     lpwsStr = (WCHAR*)malloc(nLen * sizeof(WCHAR));
+    if (lpwsStr == NULL) {
+        log_msg(LOG_ERROR, "Failed to allocate memory for lpwsStr");
+        return 1;
+    }
     MultiByteToWideChar(CP_ACP, 0, "Create Runtime Hook", -1, lpwsStr, nLen);
     memcpy((char*)rh_dialog_template + sizeof(DLGTEMPLATE) + 4, lpwsStr, (nLen * 2));
     free(lpwsStr);
@@ -494,40 +508,40 @@ int rh_init_dlg(void) {
 
 int init_rh_dlg_ui(HWND hDlg) {
     HWND ui_hwnd;
-    ui_hwnd = CreateWindow("Button", "Create", WS_CHILD | WS_VISIBLE, 20,  RH_DLGHEIGHT - 30 - 20, 100, 30, hDlg, (HMENU)IDOK, NULL, NULL);
-    if (!ui_hwnd) {
-        log_msg(LOG_ERROR, "Failed to create Button for dialog: %ld", GetLastError());
-        return 1;
-    }
-    
-    ui_hwnd = CreateWindow("Button", "Cancel", WS_CHILD | WS_VISIBLE, 140, RH_DLGHEIGHT - 30 - 20, 100, 30, hDlg, (HMENU)IDCANCEL, NULL, NULL);
+    ui_hwnd = CreateWindow(TEXT("Button"), TEXT("Create"), WS_CHILD | WS_VISIBLE, 20, RH_DLGHEIGHT - 30 - 20, 100, 30, hDlg, (HMENU)IDOK, NULL, NULL);
     if (!ui_hwnd) {
         log_msg(LOG_ERROR, "Failed to create Button for dialog: %ld", GetLastError());
         return 1;
     }
 
-    ui_hwnd = CreateWindow("Edit", NULL, WS_CHILD | WS_VISIBLE, 20, 20, 150, 20, hDlg, (HMENU)RH_ID_ADDRESS, NULL, NULL);
+    ui_hwnd = CreateWindow(TEXT("Button"), TEXT("Cancel"), WS_CHILD | WS_VISIBLE, 140, RH_DLGHEIGHT - 30 - 20, 100, 30, hDlg, (HMENU)IDCANCEL, NULL, NULL);
+    if (!ui_hwnd) {
+        log_msg(LOG_ERROR, "Failed to create Button for dialog: %ld", GetLastError());
+        return 1;
+    }
+
+    ui_hwnd = CreateWindow(TEXT("Edit"), NULL, WS_CHILD | WS_VISIBLE, 20, 20, 150, 20, hDlg, (HMENU)RH_ID_ADDRESS, NULL, NULL);
     if (!ui_hwnd) {
         log_msg(LOG_ERROR, "Failed to create Edit for dialog: %ld", GetLastError());
         return 1;
     }
     SendMessage(ui_hwnd, EM_SETCUEBANNER, (WPARAM)TRUE, (LPARAM)L"Hook Address");
 
-    ui_hwnd = CreateWindow("Edit", NULL, WS_CHILD | WS_VISIBLE | ES_NUMBER, 180, 20, 150, 20, hDlg, (HMENU)RH_ID_ARGCOUNT, NULL, NULL);
+    ui_hwnd = CreateWindow(TEXT("Edit"), NULL, WS_CHILD | WS_VISIBLE | ES_NUMBER, 180, 20, 150, 20, hDlg, (HMENU)RH_ID_ARGCOUNT, NULL, NULL);
     if (!ui_hwnd) {
         log_msg(LOG_ERROR, "Failed to create Edit for dialog: %ld", GetLastError());
         return 1;
     }
     SendMessage(ui_hwnd, EM_SETCUEBANNER, (WPARAM)TRUE, (LPARAM)L"Argument count");
 
-    ui_hwnd = CreateWindow("Edit", NULL, WS_CHILD | WS_VISIBLE, 20, 50, 150, 20, hDlg, (HMENU)RH_ID_HOOKNAME, NULL, NULL);
+    ui_hwnd = CreateWindow(TEXT("Edit"), NULL, WS_CHILD | WS_VISIBLE, 20, 50, 150, 20, hDlg, (HMENU)RH_ID_HOOKNAME, NULL, NULL);
     if (!ui_hwnd) {
         log_msg(LOG_ERROR, "Failed to create Edit for dialog: %ld", GetLastError());
         return 1;
     }
     SendMessage(ui_hwnd, EM_SETCUEBANNER, (WPARAM)TRUE, (LPARAM)L"Hook Name");
 
-    ui_hwnd = CreateWindow("Button", "Start Enabled", WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX | BS_RIGHTBUTTON, 180, 50, 150, 20, hDlg, (HMENU)RH_ID_STARTENABLED, NULL, NULL);
+    ui_hwnd = CreateWindow(TEXT("Button"), TEXT("Start Enabled"), WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX | BS_RIGHTBUTTON, 180, 50, 150, 20, hDlg, (HMENU)RH_ID_STARTENABLED, NULL, NULL);
     if (!ui_hwnd) {
         log_msg(LOG_ERROR, "Failed to create Checkbox for dialog: %ld", GetLastError());
         return 1;
@@ -537,7 +551,7 @@ int init_rh_dlg_ui(HWND hDlg) {
 }
 
 INT_PTR CALLBACK RH_DialogWndProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-    RH_Data *rh_data = (RH_Data*)GetWindowLongPtr(hDlg, GWLP_USERDATA);
+    RH_Data* rh_data = (RH_Data*)GetWindowLongPtr(hDlg, GWLP_USERDATA);
     switch (uMsg) {
     case WM_INITDIALOG:
     {
@@ -553,13 +567,13 @@ INT_PTR CALLBACK RH_DialogWndProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lP
         switch (LOWORD(wParam)) {
         case IDOK: // Handle "Create" button
         {
-            char addrstr[100];
-            GetDlgItemText(hDlg, RH_ID_ADDRESS, addrstr, sizeof(addrstr));
+            TCHAR addrstr[100];
+            GetDlgItemText(hDlg, RH_ID_ADDRESS, addrstr, sizeof(addrstr) / sizeof(*addrstr));
 
 
             rh_data->arg_count = GetDlgItemInt(hDlg, RH_ID_ARGCOUNT, NULL, FALSE);
             rh_data->addr = strtoull(addrstr, NULL, 0);
-            GetDlgItemText(hDlg, RH_ID_HOOKNAME, rh_data->name, sizeof(rh_data->name));
+            GetDlgItemText(hDlg, RH_ID_HOOKNAME, rh_data->name, sizeof(rh_data->name) / sizeof(*rh_data->name));
             rh_data->start_enabled = IsDlgButtonChecked(hDlg, RH_ID_STARTENABLED);
             EndDialog(hDlg, TRUE); // Close dialog and return TRUE
             return TRUE;

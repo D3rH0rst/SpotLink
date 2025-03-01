@@ -3,11 +3,11 @@
 #include "logging.h"
 #include <string.h>
 
-int *generate_pattern_array(const char *pattern, int *array_size) {
-	
+int* generate_pattern_array(const char* pattern, int* array_size) {
+
 	int pattern_length = strlen(pattern);
-	
-	int *ret = malloc(sizeof(int) * pattern_length);
+
+	int* ret = malloc(sizeof(int) * pattern_length);
 	*array_size = 0;
 	if (!ret) {
 		log_msg(LOG_ERROR, "Failed to allocate memory for pattern arr: %ld", GetLastError());
@@ -41,16 +41,16 @@ int *generate_pattern_array(const char *pattern, int *array_size) {
 			free(ret);
 			return NULL;
 		}
-		
+
 	}
 	return ret;
 }
 
-uint64_t scan_pattern(HINSTANCE base, const char *pattern) {
+uint64_t scan_pattern(HINSTANCE base, const char* pattern) {
 	return scan_pattern_ex(base, pattern, 0);
 }
 
-uint64_t scan_pattern_ex(HINSTANCE base, const char *pattern, int skip_count) {
+uint64_t scan_pattern_ex(HINSTANCE base, const char* pattern, int skip_count) {
 
 	MODULEINFO mi;
 
@@ -59,10 +59,10 @@ uint64_t scan_pattern_ex(HINSTANCE base, const char *pattern, int skip_count) {
 		return 0;
 	}
 
-	uint8_t *module_base = mi.lpBaseOfDll;
+	uint8_t* module_base = mi.lpBaseOfDll;
 
 	int pattern_length;
-	int *pattern_array = generate_pattern_array(pattern, &pattern_length);
+	int* pattern_array = generate_pattern_array(pattern, &pattern_length);
 
 	char found = 1;
 	size_t i;

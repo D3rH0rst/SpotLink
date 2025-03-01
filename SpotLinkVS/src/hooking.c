@@ -1,8 +1,11 @@
 #include "hooking.h"
+
 #include <stdio.h>
-#include <Win32CustomControls/CustomControls.h>
+#include <tchar.h>
+#include <intrin.h>
+#include <MinHook.h>
+#include <CustomControls.h>
 #include "logging.h"
-#include "MinHook.h"
 
 #define HOOK_ENABLED_CHECKBOX 1
 
@@ -11,21 +14,21 @@ int hooks_size = 0;
 
 int hook_window_height;
 
-Hook *get_hooks(int *out_hooks_size) {
+Hook* get_hooks(int* out_hooks_size) {
 	*out_hooks_size = hooks_size;
 	return hooks;
 }
 
-static inline int ui_create_config_label(HWND hwnd, Hook *h, int *pos_y, int *pos_x, HDC hdc, HFONT hFont) {
-	char buf[100];
+static inline int ui_create_config_label(HWND hwnd, Hook* h, int* pos_y, int* pos_x, HDC hdc, HFONT hFont) {
+	TCHAR buf[100];
 	int len;
 	SIZE sz;
 	HWND ui_hwnd;
-	len = snprintf(buf, sizeof(buf), "Hook Config `%s`", h->name);
+	len = _sntprintf_s(buf, sizeof(buf) / sizeof(*buf), _TRUNCATE, TEXT("Hook Config `%s`"), h->name);
 	GetTextExtentPoint32(hdc, buf, len, &sz);
 
 	ui_hwnd = CreateWindow(
-		"Static",
+		TEXT("Static"),
 		buf,
 		WS_CHILD | WS_VISIBLE,
 		*pos_x, *pos_y,
@@ -34,7 +37,7 @@ static inline int ui_create_config_label(HWND hwnd, Hook *h, int *pos_y, int *po
 	);
 
 	if (!ui_hwnd) {
-		printf("Failed to create 'config_label' Window: %ld\n", GetLastError());
+		_tprintf(TEXT("Failed to create 'config_label' Window: %ld\n"), GetLastError());
 		return 1;
 	}
 
@@ -43,18 +46,18 @@ static inline int ui_create_config_label(HWND hwnd, Hook *h, int *pos_y, int *po
 
 	return 0;
 }
-static inline int ui_create_called_label(HWND hwnd, Hook *h, int *pos_y, int *pos_x, HDC hdc, HFONT hFont) {
-	char buf[100];
+static inline int ui_create_called_label(HWND hwnd, Hook* h, int* pos_y, int* pos_x, HDC hdc, HFONT hFont) {
+	TCHAR buf[100];
 	int len;
 	SIZE sz;
 	HWND ui_hwnd;
 
-	len = sprintf(buf, "Called 0000000000 times");
+	len = _stprintf_s(buf, sizeof(buf) / sizeof(*buf), TEXT("Called 0000000000 times"));
 	GetTextExtentPoint32(hdc, buf, len, &sz);
 
 	ui_hwnd = CreateWindow(
-		"Static",
-		"Called 0 times",
+		TEXT("Static"),
+		TEXT("Called 0 times"),
 		WS_CHILD | WS_VISIBLE,
 		*pos_x, *pos_y,
 		sz.cx, sz.cy,
@@ -64,7 +67,7 @@ static inline int ui_create_called_label(HWND hwnd, Hook *h, int *pos_y, int *po
 	*pos_y += sz.cy + HOOKUI_PADDING;
 
 	if (!ui_hwnd) {
-		printf("Failed to create 'called_label' Window: %ld\n", GetLastError());
+		_tprintf(TEXT("Failed to create 'called_label' Window: %ld\n"), GetLastError());
 		return 1;
 	}
 
@@ -74,17 +77,17 @@ static inline int ui_create_called_label(HWND hwnd, Hook *h, int *pos_y, int *po
 
 	return 0;
 }
-static inline int ui_create_address_labels(HWND hwnd, Hook *h, int *pos_y, int *pos_x, HDC hdc, HFONT hFont) {
-	char buf[100];
+static inline int ui_create_address_labels(HWND hwnd, Hook* h, int* pos_y, int* pos_x, HDC hdc, HFONT hFont) {
+	TCHAR buf[100];
 	int len;
 	SIZE sz;
 	HWND ui_hwnd;
 
-	len = sprintf(buf, "Hook address: 0x%llX", h->address);
+	len = _stprintf_s(buf, sizeof(buf) / sizeof(*buf), TEXT("Hook address: 0x%llX"), h->address);
 	GetTextExtentPoint32(hdc, buf, len, &sz);
 
 	ui_hwnd = CreateWindow(
-		"Static",
+		TEXT("Static"),
 		buf,
 		WS_CHILD | WS_VISIBLE,
 		*pos_x, *pos_y,
@@ -96,17 +99,17 @@ static inline int ui_create_address_labels(HWND hwnd, Hook *h, int *pos_y, int *
 	*pos_x += sz.cx + HOOKUI_PADDING;
 
 	if (!ui_hwnd) {
-		printf("Failed to create 'address_label' Window: %ld\n", GetLastError());
+		_tprintf(TEXT("Failed to create 'address_label' Window: %ld\n"), GetLastError());
 		return 1;
 	}
 
 	SendMessage(ui_hwnd, WM_SETFONT, (WPARAM)hFont, TRUE);
 
-	len = sprintf(buf, "hk_func address: 0x%llX", (int64_t)h->hk_func);
+	len = _stprintf_s(buf, sizeof(buf) / sizeof(*buf), TEXT("hk_func address: 0x%llX"), (int64_t)h->hk_func);
 	GetTextExtentPoint32(hdc, buf, len, &sz);
 
 	ui_hwnd = CreateWindow(
-		"Static",
+		TEXT("Static"),
 		buf,
 		WS_CHILD | WS_VISIBLE,
 		*pos_x, *pos_y,
@@ -118,7 +121,7 @@ static inline int ui_create_address_labels(HWND hwnd, Hook *h, int *pos_y, int *
 	*pos_x = HOOKUI_PADDING;
 
 	if (!ui_hwnd) {
-		printf("Failed to create 'address_label' Window: %ld\n", GetLastError());
+		_tprintf(TEXT("Failed to create 'address_label' Window: %ld\n"), GetLastError());
 		return 1;
 	}
 
@@ -126,16 +129,16 @@ static inline int ui_create_address_labels(HWND hwnd, Hook *h, int *pos_y, int *
 
 	return 0;
 }
-static inline int ui_create_enable_button(HWND hwnd, Hook *h, int *pos_y, int *pos_x, HDC hdc, HFONT hFont) {
-	char buf[100];
+static inline int ui_create_enable_button(HWND hwnd, Hook* h, int* pos_y, int* pos_x, HDC hdc, HFONT hFont) {
+	TCHAR buf[100];
 	int len;
 	SIZE sz;
 	HWND ui_hwnd;
-	len = sprintf(buf, "Enable Hook");
+	len = _stprintf_s(buf, sizeof(buf) / sizeof(*buf), TEXT("Enable Hook"));
 	GetTextExtentPoint32(hdc, buf, len, &sz);
 
 	ui_hwnd = CreateWindow(
-		"Button",
+		TEXT("Button"),
 		buf,
 		WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX | BS_RIGHTBUTTON,
 		*pos_x, *pos_y,
@@ -146,7 +149,7 @@ static inline int ui_create_enable_button(HWND hwnd, Hook *h, int *pos_y, int *p
 	*pos_y += sz.cy + HOOKUI_PADDING;
 
 	if (!ui_hwnd) {
-		printf("Failed to create Label Window: %ld\n", GetLastError());
+		_tprintf(TEXT("Failed to create Label Window: %ld\n"), GetLastError());
 		return 1;
 	}
 
@@ -156,7 +159,7 @@ static inline int ui_create_enable_button(HWND hwnd, Hook *h, int *pos_y, int *p
 	return 0;
 }
 
-int init_hooking_ui(HWND hwnd, Hook *h) {
+int init_hooking_ui(HWND hwnd, Hook* h) {
 	int pos_y = HOOKUI_PADDING;
 	int pos_x = HOOKUI_PADDING;
 
@@ -181,56 +184,56 @@ int init_hooking_ui(HWND hwnd, Hook *h) {
 LRESULT CALLBACK HookWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	static HBRUSH hBrush = NULL;
 	MH_STATUS status;
-	Hook *hook = (Hook*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+	Hook* hook = (Hook*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
 	switch (uMsg) {
-		case WM_CREATE:
-		{
-			CREATESTRUCT *cs = (CREATESTRUCT*)lParam;
-			hook = (Hook*)cs->lpCreateParams;
-			SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)hook);
-			if (init_hooking_ui(hwnd, hook) != 0) {
-				log_msg(LOG_ERROR, "Failed to init hooking UI");
-				PostQuitMessage(1);
-			}
+	case WM_CREATE:
+	{
+		CREATESTRUCT* cs = (CREATESTRUCT*)lParam;
+		hook = (Hook*)cs->lpCreateParams;
+		SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)hook);
+		if (init_hooking_ui(hwnd, hook) != 0) {
+			log_msg(LOG_ERROR, "Failed to init hooking UI");
+			PostQuitMessage(1);
+		}
 		break;
-		}
-		case WM_CTLCOLORSTATIC:
-		{
-			HDC hdcStatic = (HDC)wParam;
+	}
+	case WM_CTLCOLORSTATIC:
+	{
+		HDC hdcStatic = (HDC)wParam;
 
-			// Set the background mode to transparent
-			SetBkMode(hdcStatic, TRANSPARENT);
+		// Set the background mode to transparent
+		SetBkMode(hdcStatic, TRANSPARENT);
 
-			// Return the parent window's background brush
-			if (!hBrush) {
-				hBrush = CreateSolidBrush(GetSysColor(COLOR_WINDOW)); // Matches default background
-			}
-			return (LRESULT)hBrush;
+		// Return the parent window's background brush
+		if (!hBrush) {
+			hBrush = CreateSolidBrush(GetSysColor(COLOR_WINDOW)); // Matches default background
 		}
-		case WM_GET_CHILD_HEIGHT:
-			return hook_window_height;
-		case WM_COMMAND:
-		{
-			if (wParam == HOOK_ENABLED_CHECKBOX) {
-				char checked = IsDlgButtonChecked(hwnd, HOOK_ENABLED_CHECKBOX);
-				if (checked == BST_CHECKED) {
-					if ((status = MH_EnableHook((LPVOID)(hook->address))) != MH_OK) {
-						log_msg(LOG_ERROR, "Error enabling hook %s: %s", hook->name, MH_StatusToString(status));
-						PostQuitMessage(1);
-						return 0;
-					}
-					log_msg(LOG_INFO, "Enabled hook %s", hook->name);
+		return (LRESULT)hBrush;
+	}
+	case WM_GET_CHILD_HEIGHT:
+		return hook_window_height;
+	case WM_COMMAND:
+	{
+		if (wParam == HOOK_ENABLED_CHECKBOX) {
+			char checked = IsDlgButtonChecked(hwnd, HOOK_ENABLED_CHECKBOX);
+			if (checked == BST_CHECKED) {
+				if ((status = MH_EnableHook((LPVOID)(hook->address))) != MH_OK) {
+					log_msg(LOG_ERROR, "Error enabling hook %s: %s", hook->name, MH_StatusToString(status));
+					PostQuitMessage(1);
+					return 0;
 				}
-				else if (checked == BST_UNCHECKED) {
-					if ((status = MH_DisableHook((LPVOID)(hook->address))) != MH_OK) {
-						log_msg(LOG_ERROR, "Error disabling hook %s: %s", hook->name, MH_StatusToString(status));
-						PostQuitMessage(1);
-						return 0;
-					}
-					log_msg(LOG_INFO, "Disabled hook %s", hook->name);
+				log_msg(LOG_INFO, "Enabled hook %s", hook->name);
+			}
+			else if (checked == BST_UNCHECKED) {
+				if ((status = MH_DisableHook((LPVOID)(hook->address))) != MH_OK) {
+					log_msg(LOG_ERROR, "Error disabling hook %s: %s", hook->name, MH_StatusToString(status));
+					PostQuitMessage(1);
+					return 0;
 				}
+				log_msg(LOG_INFO, "Disabled hook %s", hook->name);
 			}
 		}
+	}
 	}
 
 	return DefWindowProc(hwnd, uMsg, wParam, lParam);
@@ -290,13 +293,13 @@ void cleanup_hooking(HINSTANCE hInstance) {
 	rh_clean();
 }
 
-int add_hook(uint64_t address, void *hk_func, void **og_func, const char *name, char start_enabled, Hook **cb_hook) {
+int add_hook(uint64_t address, void* hk_func, void** og_func, const TCHAR* name, char start_enabled, Hook** cb_hook) {
 	if (address == 0) {
 		log_msg(LOG_ERROR, "Invalid hook address for hook %s", name);
 		return 1;
 	}
-	
-	Hook *h = &hooks[hooks_size++];
+
+	Hook* h = &hooks[hooks_size++];
 	if (cb_hook)
 		*cb_hook = h;
 
@@ -304,7 +307,7 @@ int add_hook(uint64_t address, void *hk_func, void **og_func, const char *name, 
 	h->hk_func = hk_func;
 	h->og_func = og_func;
 	//h->name = name;
-	snprintf(h->name, sizeof(h->name), "%s", name);
+	_sntprintf_s(h->name, sizeof(h->name) / sizeof(*h->name), _TRUNCATE, TEXT("%s"), name);
 	h->enabled = start_enabled;
 
 	MH_STATUS status;
@@ -328,11 +331,11 @@ int add_hook(uint64_t address, void *hk_func, void **og_func, const char *name, 
 	return 0;
 }
 
-void hook_called_callback(Hook *h) {
+void hook_called_callback(Hook* h) {
 	if (!h) return;
 
-	char buf[50];
-	sprintf(buf, "Called %d times", ++h->called_count);
+	TCHAR buf[50];
+	_stprintf_s(buf, sizeof(buf) / sizeof(*buf), TEXT("Called %d times"), ++h->called_count);
 	SetWindowText(h->called_count_label, buf);
 }
 
@@ -352,19 +355,19 @@ void print_caller2(void) {
 			caller_entry = caller_base + runtime_function->BeginAddress;
 		}
 		HMODULE m;
-		char module_name[MAX_PATH];
-		GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCSTR)caller, &m);
-		GetModuleFileName(m, module_name, sizeof(module_name));
-		log_msg(LOG_INFO, "Function caller: %s!0x%llX (OFF: 0x%llX, Entry: 0x%llX)", 
-			strrchr(module_name, '\\') + 1, 
-			caller, caller - (uint64_t)m, 
+		TCHAR module_name[MAX_PATH];
+		GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPTSTR)caller, &m);
+		GetModuleFileName(m, module_name, sizeof(module_name) / sizeof(*module_name));
+		log_msg(LOG_INFO, "Function caller: %s!0x%llX (OFF: 0x%llX, Entry: 0x%llX)",
+			_tcsrchr(module_name, TEXT('\\')) + 1,
+			caller, caller - (uint64_t)m,
 			caller_entry
 		);
 	}
 	else {
 		log_msg(LOG_WARNING, "CaptureStackBackTrace captured 0 frames: %ld", GetLastError());
-		void *retaddr = __builtin_return_address(1);
-		log_msg(LOG_DEBUG, "__builtin_return_address(1) returned 0x%llX", (uint64_t)retaddr);
+		void* retaddr = _ReturnAddress();
+		log_msg(LOG_DEBUG, "_ReturnAddress() returned 0x%llX", (uint64_t)retaddr);
 	}
 }
 
@@ -373,10 +376,10 @@ void print_caller(void) {
 	uint64_t caller_entry;
 	uint64_t caller_base;
 	PRUNTIME_FUNCTION runtime_function;
-	char module_name[MAX_PATH];
+	TCHAR module_name[MAX_PATH];
 	HMODULE m;
-	
-	caller = (uint64_t)__builtin_return_address(1);
+
+	caller = (uint64_t)_ReturnAddress();
 	if (caller) {
 		runtime_function = RtlLookupFunctionEntry(caller, &caller_base, NULL);
 		if (!runtime_function) {
@@ -386,20 +389,20 @@ void print_caller(void) {
 			caller_entry = caller_base + runtime_function->BeginAddress;
 		}
 		GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCSTR)caller, &m);
-		GetModuleFileName(m, module_name, sizeof(module_name));
+		GetModuleFileName(m, module_name, sizeof(module_name) / sizeof(*module_name));
 		log_msg(LOG_INFO, "(level 1) Function caller: %s!0x%llX (OFF: 0x%llX, Entry: 0x%llX)",
-			strrchr(module_name, '\\') + 1,
+			_tcsrchr(module_name, TEXT('\\')) + 1,
 			caller, caller - (uint64_t)m,
 			caller_entry
 		);
 	}
 }
 
-Hook *make_runtime_hook(uint64_t addr, const char *name, int argcount, char start_enabled) {
-	Hook *h = &hooks[hooks_size];
+Hook* make_runtime_hook(uint64_t addr, const TCHAR* name, int argcount, char start_enabled) {
+	Hook* h = &hooks[hooks_size];
 	h->address = addr;
-	//h->name = name;
-	snprintf(h->name, sizeof(h->name), "%s", name);
+	
+	_sntprintf_s(h->name, sizeof(h->name) / sizeof(*h->name), _TRUNCATE, TEXT("%s"), name);
 	h->runtime_hook = malloc(sizeof(RuntimeHook));
 	if (!h->runtime_hook) {
 		log_msg(LOG_ERROR, "Failed to allocate memory for RuntimeHook");
@@ -407,7 +410,7 @@ Hook *make_runtime_hook(uint64_t addr, const char *name, int argcount, char star
 	}
 	h->runtime_hook->arg_count = argcount;
 
-	void *func_addr = make_rh_hk_func(h);
+	void* func_addr = make_rh_hk_func(h);
 
 	if (!func_addr) {
 		log_msg(LOG_ERROR, "Failed to generate runtime hook function");

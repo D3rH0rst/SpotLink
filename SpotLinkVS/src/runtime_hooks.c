@@ -2,26 +2,28 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <tchar.h>
 
 #include "logging.h"
 
 #define RH_SHADOW_SPACE 0x20
 #define RH_FUNC_SIZE 256
 #define RH_MAX_PAGES 5
+#define RH_CALLEDSTR_LEN 256
 
 uint8_t reg_bytes[] = { 0x4D, 0x55, 0x45, 0x4D };
 
-const char *ret_str = "ret = 0x%llX";
+const TCHAR* ret_str = TEXT("ret = 0x%llX");
 
 DWORD rh_page_size;
 uint16_t max_func_index;
 
-void *pages[RH_MAX_PAGES];
+void* pages[RH_MAX_PAGES];
 size_t pages_size = 0;
 size_t func_index;
 
 
-FILE *rh_logfile;
+FILE* rh_logfile;
 
 int rh_alloc_new_page(void) {
 	pages[pages_size] = VirtualAlloc(NULL, rh_page_size, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
@@ -47,9 +49,7 @@ int rh_init(void) {
 
 	if (rh_alloc_new_page() != 0) return 1;
 
-	rh_logfile = fopen("./rh_log.txt", "w");
-
-	if (!rh_logfile) {
+	if (fopen_s(&rh_logfile, "./rh_log.txt", "w")) {
 		log_msg(LOG_ERROR, "Failed to open rh_log.txt");
 		return 1;
 	}
@@ -83,30 +83,30 @@ uint16_t get_arg_reg(uint8_t i) {
 	}
 }
 
-int generate_called_string(Hook *h) {
-	h->runtime_hook->called_str = malloc(256 * sizeof(char));
+int generate_called_string(Hook* h) {
+	h->runtime_hook->called_str = malloc(RH_CALLEDSTR_LEN * sizeof(TCHAR));
 	if (!h->runtime_hook->called_str) {
 		log_msg(LOG_ERROR, "Failed to allocate memory for h->called_str");
 		return 1;
 	}
 
-	snprintf(h->runtime_hook->called_str, 256, "Called `%s(", h->name);
+	_sntprintf_s(h->runtime_hook->called_str, RH_CALLEDSTR_LEN, _TRUNCATE, TEXT("Called `%s("), h->name);
 	for (int i = 0; i < h->runtime_hook->arg_count; i++) {
 		if (i == 0) {
-			strcat(h->runtime_hook->called_str, "0x%llX");
+			_tcscat_s(h->runtime_hook->called_str, RH_CALLEDSTR_LEN, TEXT("0x%llX"));
 		}
 		else {
-			strcat(h->runtime_hook->called_str, ", 0x%llX");
+			_tcscat_s(h->runtime_hook->called_str, RH_CALLEDSTR_LEN, TEXT(", 0x%llX"));
 		}
 	}
-	strcat(h->runtime_hook->called_str, ")`");
+	_tcscat_s(h->runtime_hook->called_str, RH_CALLEDSTR_LEN, TEXT(")`"));
 
 	log_msg(LOG_INFO, "Generated string: %s", h->runtime_hook->called_str);
 
 	return 0;
 }
 
-void rh_function_prologue(Hook *h, uint8_t **code_ptr) {
+void rh_function_prologue(Hook* h, uint8_t** code_ptr) {
 
 	uint8_t stack_size = h->runtime_hook->stackspace; // DEBUG:
 
@@ -127,7 +127,7 @@ void rh_function_prologue(Hook *h, uint8_t **code_ptr) {
 	}
 }
 
-void rh_move_args_to_stack(Hook *h, uint8_t **code_ptr) {
+void rh_move_args_to_stack(Hook* h, uint8_t** code_ptr) {
 	char spilled_args = (h->runtime_hook->arg_count > 4) * (h->runtime_hook->arg_count - 4);
 	// move register args on the stack
 	for (uint8_t i = 0; i < h->runtime_hook->arg_count - spilled_args; i++) {
@@ -142,7 +142,7 @@ void rh_move_args_to_stack(Hook *h, uint8_t **code_ptr) {
 	}
 }
 
-void rh_call_func(void *func, uint8_t **code_ptr) {
+void rh_call_func(void* func, uint8_t** code_ptr) {
 	*((uint16_t*)(*code_ptr)) = 0xB848;                          // mov rax, 0xADDR
 	(*code_ptr) += sizeof(uint16_t);
 
@@ -153,7 +153,7 @@ void rh_call_func(void *func, uint8_t **code_ptr) {
 	(*code_ptr) += sizeof(uint16_t);
 }
 
-void rh_call_deref_func(uint64_t addr, uint8_t **code_ptr) {
+void rh_call_deref_func(uint64_t addr, uint8_t** code_ptr) {
 	*((uint16_t*)(*code_ptr)) = 0xA148;                          // mov rax, ds:0xADDR
 	(*code_ptr) += sizeof(uint16_t);
 
@@ -164,7 +164,7 @@ void rh_call_deref_func(uint64_t addr, uint8_t **code_ptr) {
 	(*code_ptr) += sizeof(uint16_t);
 }
 
-void rh_prepare_call_hook_callback(Hook *h, uint8_t **code_ptr) {
+void rh_prepare_call_hook_callback(Hook* h, uint8_t** code_ptr) {
 	*((uint16_t*)(*code_ptr)) = 0xB948;                          // mov rcx 0xADDR
 	(*code_ptr) += sizeof(uint16_t);
 
@@ -172,7 +172,7 @@ void rh_prepare_call_hook_callback(Hook *h, uint8_t **code_ptr) {
 	(*code_ptr) += sizeof(uint64_t);
 }
 
-void rh_prepare_call_log_msg_first(Hook *h, uint8_t **code_ptr) {
+void rh_prepare_call_log_msg_first(Hook* h, uint8_t** code_ptr) {
 	// load LOG_INFO (0) into ecx
 	*((uint64_t*)(*code_ptr)) = 0x00000000B9;				      // mov ecx, 0
 	(*code_ptr) += sizeof(uint32_t) + 1;
@@ -217,7 +217,7 @@ void rh_prepare_call_log_msg_first(Hook *h, uint8_t **code_ptr) {
 	}
 }
 
-void rh_prepare_og_func_call(Hook *h, uint8_t **code_ptr) {
+void rh_prepare_og_func_call(Hook* h, uint8_t** code_ptr) {
 	for (int i = 0; i < h->runtime_hook->arg_count; i++) {
 		if (i < 4) {
 			// mov [rcx, rdx, r8, r9], [rbp + [0x10, 0x18, 0x20, 0x28]]
@@ -239,13 +239,13 @@ void rh_prepare_og_func_call(Hook *h, uint8_t **code_ptr) {
 	}
 }
 
-void rh_save_og_return_val(Hook *h, uint8_t **code_ptr) {
+void rh_save_og_return_val(Hook* h, uint8_t** code_ptr) {
 	UNREFERENCED_PARAMETER(h);
 	*((uint32_t*)(*code_ptr)) = 0xF8458948;
 	(*code_ptr) += sizeof(uint32_t);
 }
 
-void rh_prepare_call_log_msg_second(Hook *h, uint8_t **code_ptr) {
+void rh_prepare_call_log_msg_second(Hook* h, uint8_t** code_ptr) {
 	UNREFERENCED_PARAMETER(h);
 	// load LOG_INFO (0) into ecx
 	*((uint64_t*)(*code_ptr)) = 0x00000000B9;				      // mov ecx, 0
@@ -262,7 +262,7 @@ void rh_prepare_call_log_msg_second(Hook *h, uint8_t **code_ptr) {
 	(*code_ptr) += sizeof(uint32_t) - 1;
 }
 
-void rh_function_epilogue(Hook *h, uint8_t **code_ptr) {
+void rh_function_epilogue(Hook* h, uint8_t** code_ptr) {
 
 	uint8_t stack_size = h->runtime_hook->stackspace;
 
@@ -286,8 +286,8 @@ void rh_function_epilogue(Hook *h, uint8_t **code_ptr) {
 	(*code_ptr) += sizeof(uint8_t);
 }
 
-void *make_rh_hk_func(Hook *h) {
-	void *ret_func = pages[pages_size - 1] + (func_index * RH_FUNC_SIZE);
+void* make_rh_hk_func(Hook* h) {
+	void* ret_func = (char*)pages[pages_size - 1] + (func_index * RH_FUNC_SIZE);
 	log_msg(LOG_INFO, "Creating runtime hook with %d args at 0x%llX...", h->runtime_hook->arg_count, (uint64_t)ret_func);
 	fprintf(rh_logfile, "Creating runtime hook with %d args at 0x%llX...\n", h->runtime_hook->arg_count, (uint64_t)ret_func);
 
@@ -302,8 +302,8 @@ void *make_rh_hk_func(Hook *h) {
 	fprintf(rh_logfile, "Calculated stack size as 0x%X\n", h->runtime_hook->stackspace);
 
 	// generate the function code here
-	uint8_t code[512];
-	uint8_t *code_ptr = code;
+	uint8_t code[512] = { 0 };
+	uint8_t* code_ptr = code;
 	uint16_t code_size = 0;
 
 	rh_function_prologue(h, &code_ptr);
@@ -317,7 +317,7 @@ void *make_rh_hk_func(Hook *h) {
 	rh_call_func(log_sep, &code_ptr);
 
 	rh_prepare_call_log_msg_first(h, &code_ptr);
-	rh_call_func(log_msg, &code_ptr);
+	rh_call_func(_log_msg, &code_ptr);
 
 	rh_call_func(print_caller, &code_ptr);
 
@@ -326,7 +326,7 @@ void *make_rh_hk_func(Hook *h) {
 	rh_save_og_return_val(h, &code_ptr);
 
 	rh_prepare_call_log_msg_second(h, &code_ptr);
-	rh_call_func(log_msg, &code_ptr);
+	rh_call_func(_log_msg, &code_ptr);
 
 	rh_call_func(log_sep, &code_ptr);
 
@@ -342,7 +342,7 @@ void *make_rh_hk_func(Hook *h) {
 	fprintf(rh_logfile, "\n");
 
 	fflush(rh_logfile);
-	
+
 
 	memcpy(ret_func, code, code_size);
 
