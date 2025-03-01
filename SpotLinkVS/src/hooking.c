@@ -388,7 +388,32 @@ void print_caller(void) {
 		else {
 			caller_entry = caller_base + runtime_function->BeginAddress;
 		}
-		GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCSTR)caller, &m);
+		GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPTSTR)caller, &m);
+		GetModuleFileName(m, module_name, sizeof(module_name) / sizeof(*module_name));
+		log_msg(LOG_INFO, "(level 1) Function caller: %s!0x%llX (OFF: 0x%llX, Entry: 0x%llX)",
+			_tcsrchr(module_name, TEXT('\\')) + 1,
+			caller, caller - (uint64_t)m,
+			caller_entry
+		);
+	}
+}
+
+void print_caller_addr(uint64_t caller) {
+	uint64_t caller_entry;
+	uint64_t caller_base;
+	PRUNTIME_FUNCTION runtime_function;
+	TCHAR module_name[MAX_PATH];
+	HMODULE m;
+
+	if (caller) {
+		runtime_function = RtlLookupFunctionEntry(caller, &caller_base, NULL);
+		if (!runtime_function) {
+			caller_entry = 0;
+		}
+		else {
+			caller_entry = caller_base + runtime_function->BeginAddress;
+		}
+		GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPTSTR)caller, &m);
 		GetModuleFileName(m, module_name, sizeof(module_name) / sizeof(*module_name));
 		log_msg(LOG_INFO, "(level 1) Function caller: %s!0x%llX (OFF: 0x%llX, Entry: 0x%llX)",
 			_tcsrchr(module_name, TEXT('\\')) + 1,

@@ -44,5 +44,7 @@ int add_hook(uint64_t address, void* hk_func, void** og_func, const TCHAR* name,
 void hook_called_callback(Hook* h);
 
 void print_caller(void);
+void print_caller2(void);
+void print_caller_addr(uint64_t caller);
 Hook* make_runtime_hook(uint64_t addr, const TCHAR* name, int argcount, char start_enabled);
 void* make_rh_hk_func(Hook* h);

@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <tchar.h>
+#include <intrin.h>
 
 #include "logging.h"
 
@@ -286,6 +287,26 @@ void rh_function_epilogue(Hook* h, uint8_t** code_ptr) {
 	(*code_ptr) += sizeof(uint8_t);
 }
 
+void rh_print_caller(Hook* h, uint8_t** code_ptr) {
+	/*
+	mov rcx, rbp
+	add rcx, 0x08
+	mov rcx, [rcx]
+	call print_caller_addr
+	*/
+
+	*((uint32_t*)(*code_ptr)) = 0x00E98948; // mov rcx, rbp
+	(*code_ptr) += sizeof(uint32_t) - 1; 
+
+	*((uint32_t*)(*code_ptr)) = 0x08C18348; // add rcx, 0x08
+	(*code_ptr) += sizeof(uint32_t);
+
+	*((uint32_t*)(*code_ptr)) = 0x00098B48; // mov rcx, [rcx]
+	(*code_ptr) += sizeof(uint32_t) - 1;
+
+	rh_call_func(print_caller_addr, code_ptr);
+}
+
 void* make_rh_hk_func(Hook* h) {
 	void* ret_func = (char*)pages[pages_size - 1] + (func_index * RH_FUNC_SIZE);
 	log_msg(LOG_INFO, "Creating runtime hook with %d args at 0x%llX...", h->runtime_hook->arg_count, (uint64_t)ret_func);
@@ -319,7 +340,9 @@ void* make_rh_hk_func(Hook* h) {
 	rh_prepare_call_log_msg_first(h, &code_ptr);
 	rh_call_func(_log_msg, &code_ptr);
 
-	rh_call_func(print_caller, &code_ptr);
+	//rh_call_func(print_caller, &code_ptr);
+	//rh_call_func(print_caller2, &code_ptr);
+	rh_print_caller(h, &code_ptr); 
 
 	rh_prepare_og_func_call(h, &code_ptr);
 	rh_call_deref_func((uint64_t)&h->runtime_hook->og_func, &code_ptr);
