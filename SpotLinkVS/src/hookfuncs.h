@@ -13,6 +13,30 @@ extern Hook* hk_logging;
 extern void(*og_logging_func)(int a1, int a2, int a3, const char* a4, ...);
 void hk_logging_func(int a1, int a2, int a3, const char* a4, ...);
 
+#define OFF_WND_PROC 0xCC7D7C
+//LRESULT __fastcall sub_140CC7D7C(DWORD_PTR dwRefData, HWND *a2, UINT a3, WPARAM a4, unsigned __int64 lParam)
+extern Hook *hk_wndproc;
+extern LRESULT(__fastcall *og_wndproc_func)(DWORD_PTR dwRefData, HWND *pHwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+LRESULT __fastcall hk_wndproc_func(DWORD_PTR dwRefData, HWND *pHwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+#define OFF_WND_CALLER_FUNC 0xCC8540
+//LRESULT __fastcall sub_140CC8540(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
+extern Hook *hk_wnd_caller;
+extern LRESULT(__fastcall *og_wnd_caller_func)(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
+LRESULT __fastcall hk_wnd_caller_func(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
+
+
+#define OFF_ALR_PAUSED_FUNC 0x10D4168
+//char *sub_1410D4168()
+extern Hook *hk_alr_paused;
+extern char *(*og_alr_paused_func)(void);
+char *hk_alr_paused_func(void);
+
+#define OFF_DODO_FUNC 0xC9A610
+//char __fastcall sub_140C9A610(_QWORD *a1, __int64 a2, char a3, __int64 a4, __int64 a5, __int64 a6)
+extern Hook *hk_dodo;
+extern char(__fastcall *og_dodo_func)(uint64_t a1, uint64_t a2, char a3, uint64_t a4, uint64_t a5, uint64_t a6);
+char __fastcall hk_dodo_func(uint64_t a1, uint64_t a2, char a3, uint64_t a4, uint64_t a5, uint64_t a6);
 
 // maybe interesting event func
 //void *__fastcall sub_140507464(_QWORD *a1, void *a2, size_t *a3, __int64 a4)

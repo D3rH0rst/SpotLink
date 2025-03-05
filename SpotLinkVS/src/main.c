@@ -7,6 +7,7 @@
 #include <CommCtrl.h>
 #include "logging.h"
 #include <tchar.h>
+#include <crtdbg.h>
 
 #include "hooking.h"
 #include "hookfuncs.h"
@@ -90,6 +91,9 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
 DWORD WINAPI Main(LPVOID lpParameter) {
     UNREFERENCED_PARAMETER(lpParameter);
 
+#ifndef NDEBUG
+    _CrtSetDebugFillThreshold(0); // if this isnt called, _s functions fill the entire buffer with 0xFE which causes a crash
+#endif
 
     if (init_main() != 0) {
         cleanup();
@@ -323,7 +327,11 @@ int init_hooks(void) {
     //uint64_t new_pause_addr = spotify_base + OFF_NEW_PAUSE_FUNC;
     //uint64_t task_event_addr = spotify_base + OFF_TASK_EVENT_FUNC;
 
-    uint64_t new_song_addr = spotify_base + OFF_NEW_SONG_FUNC;
+    //uint64_t new_song_addr = spotify_base + OFF_NEW_SONG_FUNC;
+
+    //uint64_t alr_paused_addr = spotify_base + OFF_ALR_PAUSED_FUNC;
+
+    uint64_t dodo_addr = spotify_base + OFF_DODO_FUNC;
 
     // uint64_t pause_addr    = scan_pattern   ((HINSTANCE)spotify_base, SIG_PAUSE_FUNC   );
     // uint64_t play_addr     = scan_pattern_ex((HINSTANCE)spotify_base, SIG_PLAY_FUNC,  1);
@@ -335,7 +343,14 @@ int init_hooks(void) {
     //uint64_t shuffle1_addr = scan_pattern   ((HINSTANCE)spotify_base, SIG_SHUFFLE1_FUNC);
     //uint64_t shuffle2_addr = scan_pattern   ((HINSTANCE)spotify_base, SIG_SHUFFLE2_FUNC);
 
-    add_hook(logging_addr, hk_logging_func, (void**)(&og_logging_func), "logging_func", 1, &hk_logging);
+    //uint64_t wndproc_addr = spotify_base + OFF_WND_PROC;
+    //uint64_t wndcaller_addr = spotify_base + OFF_WND_CALLER_FUNC;
+    //
+    add_hook(logging_addr, hk_logging_func, (void**)(&og_logging_func), TEXT("logging_func"), TRUE, &hk_logging);
+    add_hook(dodo_addr, hk_dodo_func, (void**)(&og_dodo_func), TEXT("dodo_func"), TRUE, &hk_dodo);
+    //add_hook(alr_paused_addr, hk_alr_paused_func, (void**)(&og_alr_paused_func), TEXT("alr_paused_func"), TRUE, &hk_alr_paused);
+    //add_hook(wndproc_addr, hk_wndproc_func, (void**)(&og_wndproc_func), TEXT("wndproc_func"), TRUE, &hk_wndproc);
+    //add_hook(wndcaller_addr, hk_wnd_caller_func, (void**)(&og_wnd_caller_func), TEXT("wnd_caller_func"), TRUE, &hk_wnd_caller);
 
     //add_hook(event_addr,    hk_event_func,    (void**)(&og_event_func),    "event_func",    1, &hk_event   );
     //add_hook(new_pause_addr,    hk_new_pause_func,    (void**)(&og_new_pause_func),    "new_pause_func",    1, &hk_new_pause   );

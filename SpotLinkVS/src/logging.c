@@ -3,6 +3,7 @@
 #include <string.h>
 #include <tchar.h>
 
+
 #define MAX_LOG_MSG_LENGTH 256
 #define MAX_FORMATTED_BUFFER_LENGTH 1024
 
@@ -25,7 +26,7 @@ void _log_msg(int level, const TCHAR* text, ...) {
 	TCHAR buffer[MAX_LOG_MSG_LENGTH] = { 0 };
 
 	switch (level) {
-	case LOG_INFO:    _tcscpy_s(buffer, sizeof(buffer) / sizeof(*buffer), TEXT("INFO: "));    break;
+	case LOG_INFO: { errno_t err; if ((err = _tcscpy_s(buffer, sizeof(buffer) / sizeof(*buffer), TEXT("INFO: ")))) __debugbreak(); }    break;
 	case LOG_SUCCESS: _tcscpy_s(buffer, sizeof(buffer) / sizeof(*buffer), TEXT("SUCCESS: ")); break;
 	case LOG_WARNING: _tcscpy_s(buffer, sizeof(buffer) / sizeof(*buffer), TEXT("WARNING: ")); break;
 	case LOG_ERROR:   _tcscpy_s(buffer, sizeof(buffer) / sizeof(*buffer), TEXT("ERROR: "));   break;
