@@ -5,6 +5,7 @@
 #include <TlHelp32.h>
 
 #define TARGET_EXECUTABLE_NAME TEXT("Spotify.exe")
+#define TARGET_EXECUTABLE_PATH TEXT("%APPDATA%\\Spotify\\Spotify.exe")
 #define TARGET_WNDCLASS_NAME   TEXT("Chrome_WidgetWin_1")
 #define TARGET_DLL_PATH        TEXT(".\\SpotLink.dll")
 #define TARGET_DLL_NAME        TEXT("SpotLink.dll")
@@ -20,22 +21,61 @@ DWORD IsDLLAlreadyLoaded(DWORD targetPID);
 BOOL FileExists(LPCTSTR szPath);
 BOOL CheckTargetWindow(DWORD dwOwnerPID);
 
-int main(void) {
+int InjectRunning(void);
+int CreateAndInject(void);
 
+int InjectDll(HANDLE hProcess);
+
+int main(int argc, TCHAR **argv) {
+
+	if (argc == 2 && _tcscmp(argv[1], TEXT("create")) == 0) {
+		_tprintf(TEXT("Attempting to create spotify and inject...\n"));
+		return CreateAndInject() != 0;
+	}
+
+	_tprintf(TEXT("Attempting to inject into the running spotify process...\n"));
+	return InjectRunning() != 0;
+}
+
+int CreateAndInject(void) {
+	STARTUPINFO si = { sizeof(si) };
+	PROCESS_INFORMATION pi = { 0 };
+
+	TCHAR expandedPath[MAX_PATH];
+
+	// Expand the %APPDATA% variable
+	if (!ExpandEnvironmentStrings(TARGET_EXECUTABLE_PATH, expandedPath, MAX_PATH)) {
+		_tprintf(TEXT("ExpandEnvironmentStrings failed (%lu)\n"), GetLastError());
+		return 1;
+	}
+
+	BOOL success = CreateProcess(expandedPath, NULL, NULL, NULL, FALSE, CREATE_SUSPENDED, NULL, NULL, &si, &pi);
+	if (!success) {
+		_tprintf(TEXT("CreateProcess failed: %ld\n"), GetLastError());
+		return 1;
+	}
+
+	_tprintf("Process created, attemting to inject...\n");
+
+	if (InjectDll(pi.hProcess) != 0) {
+		_tprintf(TEXT("DLL injection failed\n"));
+		TerminateProcess(pi.hProcess, 1);
+		CloseHandle(pi.hProcess);
+		CloseHandle(pi.hThread);
+		return 1;
+	}
+
+	ResumeThread(pi.hThread);
+	CloseHandle(pi.hProcess);
+	CloseHandle(pi.hThread);
+	return 0;
+}
+
+int InjectRunning(void) {
 	if (!FileExists(TARGET_DLL_PATH)) {
 		_tprintf(TEXT("Could not find target dll `%s`\n"), TARGET_DLL_PATH);
 		return 1;
 	}
-	
-	TCHAR full_dll_path[MAX_PATH];
-	DWORD dll_path_length = GetFullPathName(TARGET_DLL_PATH, sizeof(full_dll_path) / sizeof(*full_dll_path), full_dll_path, NULL);
-	
-	if (dll_path_length == 0) {
-		_tprintf(TEXT("Failed to get full dll path for `%s`\n"), TARGET_DLL_PATH);
-		return 1;
-	}
-	
-	_tprintf(TEXT("Target DLL `%s` full path: %s length: %ld\n"), TARGET_DLL_PATH, full_dll_path, dll_path_length);
 
 	DWORD target_pid = GetTargetPID();
 
@@ -56,6 +96,25 @@ int main(void) {
 		_tprintf(TEXT("Failed to OpenProcess on %ld: %ld\n"), target_pid, GetLastError());
 		return 1;
 	}
+
+	if (InjectDll(hProcess) != 0) {
+		_tprintf(TEXT("Failed to inject the DLL\n"));
+		return 1;
+	}
+
+	return 0;
+}
+
+int InjectDll(HANDLE hProcess) {
+	TCHAR full_dll_path[MAX_PATH + 1];
+	DWORD dll_path_length = GetFullPathName(TARGET_DLL_PATH, sizeof(full_dll_path) / sizeof(*full_dll_path), full_dll_path, NULL);
+
+	if (dll_path_length == 0) {
+		_tprintf(TEXT("Failed to get full dll path for `%s`\n"), TARGET_DLL_PATH);
+		return 1;
+	}
+
+	_tprintf(TEXT("Target DLL `%s` full path: %s length: %ld\n"), TARGET_DLL_PATH, full_dll_path, dll_path_length);
 
 	PVOID pRemoteString = VirtualAllocEx(hProcess, NULL, dll_path_length + 1, MEM_COMMIT, PAGE_READWRITE);
 	if (!pRemoteString) {
@@ -95,12 +154,23 @@ int main(void) {
 		CloseHandle(hProcess);
 		return 1;
 	}
-	else {
-		_tprintf(TEXT("Created remote thread for ") TEXT(TARGETFUNC) TEXT(" in target process...\n"));
-		WaitForSingleObject(hThread, 4000);
-		ResumeThread(hProcess);
-		CloseHandle(hThread);
+	
+	_tprintf(TEXT("Created remote thread for ") TEXT(TARGETFUNC) TEXT(" in target process...\n"));
+	WaitForSingleObject(hThread, 4000);
+	
+	DWORD exitCode;
+	if (GetExitCodeThread(hThread, &exitCode) && exitCode != 0) {
+		_tprintf(TEXT("DLL loaded successfully (LoadLibrary returned 0x%lx)\n"), exitCode);
 	}
+	else {
+		_tprintf(TEXT("LoadLibrary failed or thread did not complete: %ld\n"), GetLastError());
+		VirtualFreeEx(hProcess, pRemoteString, 0, MEM_RELEASE);
+		CloseHandle(hThread);
+		return 1;
+	}
+
+
+	CloseHandle(hThread);
 
 
 	_tprintf(TEXT("Successfully injected `%s` into `%s`\n"), full_dll_path, TARGET_EXECUTABLE_NAME);
