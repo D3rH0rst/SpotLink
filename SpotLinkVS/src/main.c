@@ -302,7 +302,7 @@ int init_ui(HWND hwnd) {
 #ifdef LOGFILE
 int init_logfile(void) {
     
-    if (fopen_s(&logfile, logfile_path, "w")) {
+    if (_tfopen_s(&logfile, logfile_path, TEXT("w"))) {
         log_msg(LOG_ERROR, "Failed to open logfile at path %s", logfile_path);
         return 1;
     }
@@ -325,11 +325,11 @@ int init_hooks(void) {
 
     if (init_hooking((HINSTANCE)spotify_base) != 0) return 1;
 
-    uint64_t logging_addr = scan_pattern((HINSTANCE)spotify_base, SIG_LOGGING_FUNC);
-    ADD_HOOK(logging_addr, logging, TRUE);
+    //uint64_t logging_addr = scan_pattern((HINSTANCE)spotify_base, SIG_LOGGING_FUNC);
+    //ADD_HOOK(logging_addr, logging, TRUE);
 
-    uint64_t VPauseReqeust_addr = spotify_base + OFF_VPAUSEREQUEST;
-    ADD_HOOK(VPauseReqeust_addr, VPauseRequest, TRUE);
+    //uint64_t VPauseReqeust_addr = spotify_base + OFF_VPAUSEREQUEST;
+    //ADD_HOOK(VPauseReqeust_addr, VPauseRequest, TRUE);
 
 
     int hooks_size;
