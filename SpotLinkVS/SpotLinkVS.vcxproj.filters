@@ -52,5 +52,6 @@
     <None Include="fetchMinhook.bat">
       <Filter>Source Files</Filter>
     </None>
+    <None Include="PropertySheet.props" />
   </ItemGroup>
 </Project>
