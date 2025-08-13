@@ -36,10 +36,14 @@ Hook* get_hooks(int* out_hooks_size);
 
 int rh_init(void);
 void rh_clean(void);
-int init_hooking(HINSTANCE hInstance);
-void cleanup_hooking(HINSTANCE hInstance);
+int init_hooking(void);
+void cleanup_hooking(void);
+
+void hooking_set_log_fn(void(*fn)(const TCHAR*, ...));
 
 int add_hook(uint64_t address, void* hk_func, void** og_func, const TCHAR* name, char start_enabled, Hook** cb_hook);
+int enable_hook(Hook *h);
+int disable_hook(Hook *h);
 
 void hook_called_callback(Hook* h);
 

@@ -19,10 +19,8 @@ int log_length;
 
 TCHAR old_text[MAX_EDIT_BUFFER_SIZE + 1];
 
-void _log_msg(int level, const TCHAR* text, ...) {
-	va_list args;
-	va_start(args, text);
 
+void _vlog_msg(int level, const TCHAR *text, va_list args) {
 	TCHAR buffer[MAX_LOG_MSG_LENGTH] = { 0 };
 
 	switch (level) {
@@ -74,6 +72,13 @@ void _log_msg(int level, const TCHAR* text, ...) {
 #ifdef CONSOLE
 	_tprintf(TEXT("%s"), formatted_message);
 #endif
+}
+
+void _log_msg(int level, const TCHAR* text, ...) {
+	va_list args;
+	va_start(args, text);
+
+	_vlog_msg(level, text, args);
 
 	va_end(args);
 }

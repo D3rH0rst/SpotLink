@@ -29,7 +29,7 @@ DEFINE_HOOK(uint64_t*, VPauseRequest, int64_t a1, uint64_t* a2, int64_t a3, int6
 
 	log_sep();
 	log_msg(LOG_INFO, "Called `int64_t VPauseRequest(0x%llX, 0x%llX, 0x%llX, 0x%llX)`", a1, a2, a3, a4);
-	print_caller();
+	print_caller_addr(_ReturnAddress());
 	
 	uint64_t* ret = og_VPauseRequest_func(a1, a2, a3, a4);
 
@@ -37,4 +37,45 @@ DEFINE_HOOK(uint64_t*, VPauseRequest, int64_t a1, uint64_t* a2, int64_t a3, int6
 	log_sep();
 
 	return ret;
+}
+
+DEFINE_HOOK(BOOL, PostQueuedCompletionStatus, HANDLE CompletionPort, DWORD dwNumBytes, ULONG_PTR dwCompletionKey, LPOVERLAPPED lpOverlapped) {
+	hook_called_callback(hk_PostQueuedCompletionStatus);
+
+	log_sep();
+	log_msg(LOG_INFO, "Called `bool PostQueuedCompletionStatus(0x%llX, 0x%X, 0x%llX, 0x%llX)`", CompletionPort, dwNumBytes, dwCompletionKey, lpOverlapped);
+	print_caller_addr(_ReturnAddress());
+
+	BOOL ret = og_PostQueuedCompletionStatus_func(CompletionPort, dwNumBytes, dwCompletionKey, lpOverlapped);
+
+	log_msg(LOG_INFO, "ret = %d", ret);
+	log_sep();
+
+	return ret;
+}
+
+DEFINE_HOOK(char, pause, int64_t a1, char a2, int64_t a3) {
+	hook_called_callback(hk_pause);
+
+	log_sep();
+	log_msg(LOG_INFO, "Called `char pause(0x%llX, %d, 0x%llX)`", a1, a2, a3);
+	print_caller_addr(_ReturnAddress());
+
+	char ret = og_pause_func(a1, a2, a3);
+
+	log_msg(LOG_INFO, "ret = %d", ret);
+	log_sep();
+
+	return ret;
+}
+
+DEFINE_HOOK(void, event, int64_t a1, struct _OVERLAPPED* a2) {
+	hook_called_callback(hk_pause);
+
+	log_sep();
+	log_msg(LOG_INFO, "Called `void event(0x%llX, 0x%llX)`", a1, a2);
+	print_caller_addr(_ReturnAddress());
+
+	og_event_func(a1, a2);
+	log_sep();
 }

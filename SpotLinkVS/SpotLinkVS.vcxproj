@@ -13,6 +13,14 @@
       <Configuration>Debug</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Inject Running DBG|Win32">
+      <Configuration>Inject Running DBG</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Inject Running DBG|x64">
+      <Configuration>Inject Running DBG</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Inject Running|Win32">
       <Configuration>Inject Running</Configuration>
       <Platform>Win32</Platform>
@@ -48,6 +56,12 @@
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Inject Running DBG|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
@@ -70,6 +84,12 @@
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Inject Running DBG|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
@@ -105,6 +125,10 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="PropertySheet.props" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Inject Running DBG|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="PropertySheet.props" />
+  </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="PropertySheet.props" />
@@ -118,6 +142,10 @@
     <Import Project="PropertySheet.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="PropertySheet.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Inject Running DBG|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="PropertySheet.props" />
   </ImportGroup>
@@ -137,6 +165,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <TargetName>SpotLink</TargetName>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Inject Running DBG|Win32'">
+    <TargetName>SpotLink</TargetName>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <TargetName>SpotLink</TargetName>
   </PropertyGroup>
@@ -149,6 +180,9 @@
     <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <TargetName>SpotLink</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Inject Running DBG|x64'">
     <TargetName>SpotLink</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -168,14 +202,36 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions);LOGFILE;CONSOLE;</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(MinHookDir)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(SolutionDir)SigScanner\src;$(SolutionDir)Hooking\src;$(MinHookDir)\include</AdditionalIncludeDirectories>
       <UndefinePreprocessorDefinitions>CONSOLE</UndefinePreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(MinHookDir)\build\VC17\lib\$(Configuration)\;</AdditionalLibraryDirectories>
-      <AdditionalDependencies>gdi32.lib;user32.lib;libMinHook.x64.lib;</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(MinHookDir)\build\VC17\lib\$(Configuration)\;$(OutDir);</AdditionalLibraryDirectories>
+      <AdditionalDependencies>gdi32.lib;user32.lib;libMinHook.x64.lib;SigScanner.lib;CustomControls.lib;Hooking.lib;</AdditionalDependencies>
+    </Link>
+    <PreBuildEvent>
+      <Command>call "$(ProjectDir)fetchMinhook.bat" "$(SolutionDir)" "$(Configuration)"</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Download and build Minhook if it doesnt exist</Message>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Inject Running DBG|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions);LOGFILE;CONSOLE;</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(SolutionDir)SigScanner\src;$(SolutionDir)Hooking\src;$(MinHookDir)\include</AdditionalIncludeDirectories>
+      <UndefinePreprocessorDefinitions>CONSOLE</UndefinePreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(MinHookDir)\build\VC17\lib\$(Configuration)\;$(OutDir);</AdditionalLibraryDirectories>
+      <AdditionalDependencies>gdi32.lib;user32.lib;libMinHook.x64.lib;SigScanner.lib;CustomControls.lib;Hooking.lib;</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
       <Command>call "$(ProjectDir)fetchMinhook.bat" "$(SolutionDir)" "$(Configuration)"</Command>
@@ -192,7 +248,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);LOGFILE;CONSOLE;</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(MinHookDir)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(SolutionDir)SigScanner\src;$(SolutionDir)Hooking\src;$(MinHookDir)\include</AdditionalIncludeDirectories>
       <UndefinePreprocessorDefinitions>CONSOLE</UndefinePreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -200,8 +256,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(MinHookDir)\build\VC17\lib\$(Configuration)\;</AdditionalLibraryDirectories>
-      <AdditionalDependencies>gdi32.lib;user32.lib;libMinHook.x64.lib;</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(MinHookDir)\build\VC17\lib\$(Configuration)\;$(OutDir);</AdditionalLibraryDirectories>
+      <AdditionalDependencies>gdi32.lib;user32.lib;libMinHook.x64.lib;SigScanner.lib;CustomControls.lib;Hooking.lib;</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
       <Command>call "$(ProjectDir)fetchMinhook.bat" "$(SolutionDir)" "$(Configuration)"</Command>
@@ -218,7 +274,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);LOGFILE;CONSOLE;</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(MinHookDir)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(SolutionDir)SigScanner\src;$(SolutionDir)Hooking\src;$(MinHookDir)\include</AdditionalIncludeDirectories>
       <UndefinePreprocessorDefinitions>CONSOLE</UndefinePreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -226,8 +282,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(MinHookDir)\build\VC17\lib\$(Configuration)\;</AdditionalLibraryDirectories>
-      <AdditionalDependencies>gdi32.lib;user32.lib;libMinHook.x64.lib;</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(MinHookDir)\build\VC17\lib\$(Configuration)\;$(OutDir);</AdditionalLibraryDirectories>
+      <AdditionalDependencies>gdi32.lib;user32.lib;libMinHook.x64.lib;SigScanner.lib;CustomControls.lib;Hooking.lib;</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
       <Command>call "$(ProjectDir)fetchMinhook.bat" "$(SolutionDir)" "$(Configuration)"</Command>
@@ -244,7 +300,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);LOGFILE;CONSOLE;</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(MinHookDir)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(SolutionDir)SigScanner\src;$(SolutionDir)Hooking\src;$(MinHookDir)\include</AdditionalIncludeDirectories>
       <UndefinePreprocessorDefinitions>CONSOLE</UndefinePreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -252,8 +308,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(MinHookDir)\build\VC17\lib\$(Configuration)\;</AdditionalLibraryDirectories>
-      <AdditionalDependencies>gdi32.lib;user32.lib;libMinHook.x64.lib;</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(MinHookDir)\build\VC17\lib\$(Configuration)\;$(OutDir);</AdditionalLibraryDirectories>
+      <AdditionalDependencies>gdi32.lib;user32.lib;libMinHook.x64.lib;SigScanner.lib;CustomControls.lib;Hooking.lib;</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
       <Command>call "$(ProjectDir)fetchMinhook.bat" "$(SolutionDir)" "$(Configuration)"</Command>
@@ -268,14 +324,38 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);LOGFILE;CONSOLE;</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(MinHookDir)\include</AdditionalIncludeDirectories>
-      <UndefinePreprocessorDefinitions>CONSOLE</UndefinePreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(SolutionDir)SigScanner\src;$(SolutionDir)Hooking\src;$(MinHookDir)\include</AdditionalIncludeDirectories>
+      <UndefinePreprocessorDefinitions>
+      </UndefinePreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(MinHookDir)\build\VC17\lib\$(Configuration)\;</AdditionalLibraryDirectories>
-      <AdditionalDependencies>gdi32.lib;user32.lib;libMinHook.x64.lib;</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(MinHookDir)\build\VC17\lib\$(Configuration)\;$(OutDir);</AdditionalLibraryDirectories>
+      <AdditionalDependencies>gdi32.lib;user32.lib;libMinHook.x64.lib;SigScanner.lib;CustomControls.lib;Hooking.lib;</AdditionalDependencies>
+    </Link>
+    <PreBuildEvent>
+      <Command>call "$(ProjectDir)fetchMinhook.bat" "$(SolutionDir)" "$(Configuration)"</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Download and build Minhook if it doesnt exist</Message>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Inject Running DBG|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);LOGFILE;CONSOLE;</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(SolutionDir)SigScanner\src;$(SolutionDir)Hooking\src;$(MinHookDir)\include</AdditionalIncludeDirectories>
+      <UndefinePreprocessorDefinitions>
+      </UndefinePreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(MinHookDir)\build\VC17\lib\$(Configuration)\;$(OutDir);</AdditionalLibraryDirectories>
+      <AdditionalDependencies>gdi32.lib;user32.lib;libMinHook.x64.lib;SigScanner.lib;CustomControls.lib;Hooking.lib;</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
       <Command>call "$(ProjectDir)fetchMinhook.bat" "$(SolutionDir)" "$(Configuration)"</Command>
@@ -292,7 +372,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);LOGFILE;CONSOLE;</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(MinHookDir)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(SolutionDir)SigScanner\src;$(SolutionDir)Hooking\src;$(MinHookDir)\include</AdditionalIncludeDirectories>
       <UndefinePreprocessorDefinitions>CONSOLE</UndefinePreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -300,8 +380,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(MinHookDir)\build\VC17\lib\$(Configuration)\;</AdditionalLibraryDirectories>
-      <AdditionalDependencies>gdi32.lib;user32.lib;libMinHook.x64.lib;</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(MinHookDir)\build\VC17\lib\$(Configuration)\;$(OutDir);</AdditionalLibraryDirectories>
+      <AdditionalDependencies>gdi32.lib;user32.lib;libMinHook.x64.lib;SigScanner.lib;CustomControls.lib;Hooking.lib;</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
       <Command>call "$(ProjectDir)fetchMinhook.bat" "$(SolutionDir)" "$(Configuration)"</Command>
@@ -318,7 +398,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);LOGFILE;CONSOLE;</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(MinHookDir)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(SolutionDir)SigScanner\src;$(SolutionDir)Hooking\src;$(MinHookDir)\include</AdditionalIncludeDirectories>
       <UndefinePreprocessorDefinitions>CONSOLE</UndefinePreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -326,8 +406,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(MinHookDir)\build\VC17\lib\$(Configuration)\;</AdditionalLibraryDirectories>
-      <AdditionalDependencies>gdi32.lib;user32.lib;libMinHook.x64.lib;</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(MinHookDir)\build\VC17\lib\$(Configuration)\;$(OutDir);</AdditionalLibraryDirectories>
+      <AdditionalDependencies>gdi32.lib;user32.lib;libMinHook.x64.lib;SigScanner.lib;CustomControls.lib;Hooking.lib;</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
       <Command>call "$(ProjectDir)fetchMinhook.bat" "$(SolutionDir)" "$(Configuration)"</Command>
@@ -344,7 +424,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);LOGFILE;CONSOLE;</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(MinHookDir)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(SolutionDir)SigScanner\src;$(SolutionDir)Hooking\src;$(MinHookDir)\include</AdditionalIncludeDirectories>
       <UndefinePreprocessorDefinitions>CONSOLE</UndefinePreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -352,8 +432,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(MinHookDir)\build\VC17\lib\$(Configuration)\;</AdditionalLibraryDirectories>
-      <AdditionalDependencies>gdi32.lib;user32.lib;libMinHook.x64.lib;</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(MinHookDir)\build\VC17\lib\$(Configuration)\;$(OutDir);</AdditionalLibraryDirectories>
+      <AdditionalDependencies>gdi32.lib;user32.lib;libMinHook.x64.lib;SigScanner.lib;CustomControls.lib;Hooking.lib;</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
       <Command>call "$(ProjectDir)fetchMinhook.bat" "$(SolutionDir)" "$(Configuration)"</Command>
@@ -364,11 +444,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\hookfuncs.c" />
-    <ClCompile Include="src\hooking.c" />
+    <ClCompile Include="src\hook_ui.c" />
     <ClCompile Include="src\logging.c" />
     <ClCompile Include="src\main.c" />
-    <ClCompile Include="src\runtime_hooks.c" />
-    <ClCompile Include="src\sigscanner.c" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CustomControls\CustomControls.vcxproj">
@@ -376,10 +454,11 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\globals.h" />
     <ClInclude Include="src\hookfuncs.h" />
-    <ClInclude Include="src\hooking.h" />
+    <ClInclude Include="src\hook_ui.h" />
     <ClInclude Include="src\logging.h" />
-    <ClInclude Include="src\sigscanner.h" />
+    <ClInclude Include="src\main.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="fetchMinhook.bat" />

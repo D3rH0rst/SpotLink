@@ -23,5 +23,13 @@ DECLARE_HOOK(void, logging, int, int, int, const char*, ...);
 // _QWORD *__fastcall sub_140594BA4(__int64 a1, _QWORD *a2, __int64 a3, __int64 *a4)
 DECLARE_HOOK(uint64_t*, VPauseRequest, int64_t, uint64_t*, int64_t, int64_t*);
 
+DECLARE_HOOK(BOOL, PostQueuedCompletionStatus, HANDLE, DWORD, ULONG_PTR, LPOVERLAPPED);
+
+//char __fastcall sub_1401E66B4(__int64 a1, char a2, __int64 a3)
+#define OFF_PAUSE 0x1E66B4
+DECLARE_HOOK(char, pause, int64_t, char, int64_t);
 
 
+//void __fastcall sub_14033B198(__int64 a1, struct _OVERLAPPED *a2)
+#define OFF_EVENT 0x33B198
+DECLARE_HOOK(void, event, int64_t, struct _OVERLAPPED*);

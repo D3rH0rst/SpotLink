@@ -16,7 +16,7 @@ enum LogLevel {
 	LOG_NOLEVEL
 };
 
-
+void _vlog_msg(int level, const TCHAR *text, va_list args);
 void _log_msg(int level, const TCHAR* msg, ...);
 void log_sep(void);
 void set_log_window(HWND* window);

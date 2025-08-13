@@ -5,8 +5,6 @@
 #include <tchar.h>
 #include <intrin.h>
 
-#include "logging.h"
-
 #define RH_SHADOW_SPACE 0x20
 #define RH_FUNC_SIZE 256
 #define RH_MAX_PAGES 5
@@ -26,11 +24,13 @@ size_t func_index;
 
 FILE* rh_logfile;
 
+void hook_log_fn(const TCHAR *format, ...);
+
 int rh_alloc_new_page(void) {
 	pages[pages_size] = VirtualAlloc(NULL, rh_page_size, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 
 	if (!pages[pages_size]) {
-		log_msg(LOG_ERROR, "Failed to allocate memory for hk_func");
+		hook_log_fn(TEXT("[ERROR] Failed to allocate memory for hk_func"));
 		return 1;
 	}
 
@@ -51,7 +51,7 @@ int rh_init(void) {
 	if (rh_alloc_new_page() != 0) return 1;
 
 	if (fopen_s(&rh_logfile, "./rh_log.txt", "w")) {
-		log_msg(LOG_ERROR, "Failed to open rh_log.txt");
+		hook_log_fn(TEXT("Failed to open rh_log.txt"));
 		return 1;
 	}
 
@@ -87,7 +87,7 @@ uint16_t get_arg_reg(uint8_t i) {
 int generate_called_string(Hook* h) {
 	h->runtime_hook->called_str = malloc(RH_CALLEDSTR_LEN * sizeof(TCHAR));
 	if (!h->runtime_hook->called_str) {
-		log_msg(LOG_ERROR, "Failed to allocate memory for h->called_str");
+		hook_log_fn(TEXT("[ERROR] Failed to allocate memory for h->called_str"));
 		return 1;
 	}
 
@@ -102,7 +102,7 @@ int generate_called_string(Hook* h) {
 	}
 	_tcscat_s(h->runtime_hook->called_str, RH_CALLEDSTR_LEN, TEXT(")`"));
 
-	log_msg(LOG_INFO, "Generated string: %s", h->runtime_hook->called_str);
+	hook_log_fn(TEXT("Generated string: %s"), h->runtime_hook->called_str);
 
 	return 0;
 }
@@ -307,9 +307,12 @@ void rh_print_caller(Hook* h, uint8_t** code_ptr) {
 	rh_call_func(print_caller_addr, code_ptr);
 }
 
+extern void *log_sep; // TODO: Need to rewrite the log call to the normal logging function
+extern void *_log_msg;
+
 void* make_rh_hk_func(Hook* h) {
 	void* ret_func = (char*)pages[pages_size - 1] + (func_index * RH_FUNC_SIZE);
-	log_msg(LOG_INFO, "Creating runtime hook with %d args at 0x%llX...", h->runtime_hook->arg_count, (uint64_t)ret_func);
+	hook_log_fn(TEXT("Creating runtime hook with %d args at 0x%llX..."), h->runtime_hook->arg_count, (uint64_t)ret_func);
 	fprintf(rh_logfile, "Creating runtime hook with %d args at 0x%llX...\n", h->runtime_hook->arg_count, (uint64_t)ret_func);
 
 	if (generate_called_string(h) != 0) return NULL;
@@ -319,7 +322,7 @@ void* make_rh_hk_func(Hook* h) {
 	h->runtime_hook->stackspace = RH_SHADOW_SPACE + 8 + (8 * spilled_args);
 	h->runtime_hook->stackspace = (h->runtime_hook->stackspace + 15) & ~15; // align to multiple of 0x10
 
-	log_msg(LOG_INFO, "Calculated stack size as 0x%X", h->runtime_hook->stackspace);
+	hook_log_fn(TEXT("Calculated stack size as 0x%X"), h->runtime_hook->stackspace);
 	fprintf(rh_logfile, "Calculated stack size as 0x%X\n", h->runtime_hook->stackspace);
 
 	// generate the function code here
@@ -340,8 +343,6 @@ void* make_rh_hk_func(Hook* h) {
 	rh_prepare_call_log_msg_first(h, &code_ptr);
 	rh_call_func(_log_msg, &code_ptr);
 
-	//rh_call_func(print_caller, &code_ptr);
-	//rh_call_func(print_caller2, &code_ptr);
 	rh_print_caller(h, &code_ptr); 
 
 	rh_prepare_og_func_call(h, &code_ptr);
@@ -357,7 +358,7 @@ void* make_rh_hk_func(Hook* h) {
 
 	code_size = code_ptr - code;
 
-	log_msg(LOG_INFO, "Generated code: %d bytes", code_size);
+	hook_log_fn(TEXT("Generated code: %d bytes"), code_size);
 	fprintf(rh_logfile, "Generated code (%d bytes):\n", code_size);
 	for (int i = 0; i < code_size; i++) {
 		fprintf(rh_logfile, "0x%.2X ", code[i]);

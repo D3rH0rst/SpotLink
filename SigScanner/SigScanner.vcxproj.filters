@@ -15,40 +15,13 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\main.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\logging.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\hookfuncs.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\hook_ui.c">
+    <ClCompile Include="src\sigscanner.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\logging.h">
+    <ClInclude Include="src\sigscanner.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\hookfuncs.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\globals.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\main.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\hook_ui.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="fetchMinhook.bat">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="PropertySheet.props" />
   </ItemGroup>
 </Project>
