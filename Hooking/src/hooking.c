@@ -1,5 +1,5 @@
-#include "hooking.h"
-
+#include <hooking.h>
+#include "hooking_defs.h"
 #include <stdio.h>
 #include <tchar.h>
 #include <intrin.h>
@@ -25,6 +25,10 @@ void hook_log_fn(const TCHAR *format, ...) {
 Hook* get_hooks(int* out_hooks_size) {
 	*out_hooks_size = hooks_size;
 	return hooks;
+}
+
+size_t get_hook_item_size(void) {
+	return sizeof(Hook);
 }
 
 int init_hooking(void) {
@@ -60,7 +64,7 @@ void cleanup_hooking() {
 	rh_clean();
 }
 
-void hooking_set_log_fn(void(*fn)(const TCHAR *, ...)) {
+void hooking_set_vlog_fn(void(*fn)(const TCHAR *, va_list)) {
 	hook_vlog_fn = fn;
 }
 
@@ -122,12 +126,38 @@ int disable_hook(Hook * h) {
 	return 0;
 }
 
-void hook_called_callback(Hook* h) {
-	if (!h) return;
+const TCHAR *get_hook_name(Hook *h) {
+	return h->name;
+}
 
-	TCHAR buf[50];
-	_stprintf_s(buf, sizeof(buf) / sizeof(*buf), TEXT("Called %d times"), ++h->called_count);
-	SetWindowText(h->called_count_label, buf);
+void set_hook_data(Hook *h, void *data) {
+	h->hook_data = data;
+}
+
+void *get_hook_data(Hook *h) {
+	return h->hook_data;
+}
+
+uint64_t get_hook_address(Hook *h) {
+	return h->address;
+}
+
+void *get_hook_func(Hook *h) {
+	return h->hk_func;
+}
+
+char is_hook_enabled(Hook *h) {
+	return h->enabled;
+}
+
+int get_hook_called_count(Hook *h) {
+	return h->called_count;
+}
+void increment_hook_called_count(Hook *h) {
+	h->called_count++;
+}
+int increment_and_get_hook_called_count(Hook *h) {
+	return ++h->called_count;
 }
 
 void print_caller2(void) {

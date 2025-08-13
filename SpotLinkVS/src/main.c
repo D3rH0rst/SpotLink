@@ -46,6 +46,8 @@ DWORD WINAPI Main(LPVOID lpParameter) {
         return 1;
     }
 
+    log_msg(LOG_DEBUG, "log_sep addr: 0x%llX", log_sep);
+
     log_sep();
     log_msg(LOG_INFO, "Initialization successful - Spotify at 0x%llX", g_pCtx->hSpotify);
     log_sep();
@@ -61,8 +63,11 @@ int init_main(void) {
     g_pCtx->hSpotify = GetModuleHandle(NULL);
     if (!g_pCtx->hSpotify) return 1;
 
-    sscn_set_log_fn(vlog_msg_wrapper);
-    hooking_set_log_fn(vlog_msg_wrapper);
+    sscn_set_vlog_fn(vlog_msg_wrapper);
+    hooking_set_vlog_fn(vlog_msg_wrapper);
+    rh_set_called_callback(hook_ui_hook_called_callback);
+    rh_set_print_seperator(log_sep);
+    rh_set_log_msg(_log_msg);
 
 #ifdef CONSOLE
     if (init_console() != 0) return 1;
@@ -260,7 +265,7 @@ int init_logfile(void) {
 #endif
 
 const TCHAR* hook_text_cb(void* hook) {
-    return ((Hook*)hook)->name;
+    return get_hook_name(hook);
 }
 
 int init_hooks(void) {
@@ -277,15 +282,15 @@ int init_hooks(void) {
 
     //ADD_HOOK(PostQueuedCompletionStatus, PostQueuedCompletionStatus, TRUE);
 
-    //uint64_t pause_addr = spotify_base + OFF_PAUSE;
-    //ADD_HOOK(pause_addr, pause, TRUE);
+    uint64_t pause_addr = spotify_base + OFF_PAUSE;
+    ADD_HOOK(pause_addr, pause, TRUE);
 
     //uint64_t event_addr = spotify_base + OFF_EVENT;
     //ADD_HOOK(event_addr, event, TRUE);
 
     int hooks_size;
     Hook* hooks = get_hooks(&hooks_size);
-    if (AccordionAddItemArray(g_pCtx->pAccordion, hooks, hooks_size, sizeof(*hooks), HOOKING_WNDCLASS_NAME, NULL, hook_text_cb, 0) != 0) {
+    if (AccordionAddItemArray(g_pCtx->pAccordion, hooks, hooks_size, get_hook_item_size(), HOOKING_WNDCLASS_NAME, NULL, get_hook_name, 0) != 0) {
         log_msg(LOG_ERROR, "Failed to add item array to accordion");
         return 1;
     }

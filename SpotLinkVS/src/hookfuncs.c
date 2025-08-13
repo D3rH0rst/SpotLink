@@ -1,6 +1,6 @@
 #include "hookfuncs.h"
 #include "logging.h"
-
+#include "hook_ui.h"
 #include <intrin.h>
 
 #define GUID_FORMAT TEXT("{%08lX-%04hX-%04hX-%02hhX%02hhX-%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX}")
@@ -8,7 +8,7 @@
 BOOL show_spotify_log = FALSE;
 
 DEFINE_HOOK(void, logging, int a1, int a2, int a3, const char* a4, ...) {
-	hook_called_callback(hk_logging);
+	hook_ui_hook_called_callback(hk_logging);
 
 	if (show_spotify_log) {
 		va_list va;
@@ -25,7 +25,7 @@ DEFINE_HOOK(void, logging, int a1, int a2, int a3, const char* a4, ...) {
 }
 
 DEFINE_HOOK(uint64_t*, VPauseRequest, int64_t a1, uint64_t* a2, int64_t a3, int64_t* a4) {
-	hook_called_callback(hk_VPauseRequest);
+	hook_ui_hook_called_callback(hk_VPauseRequest);
 
 	log_sep();
 	log_msg(LOG_INFO, "Called `int64_t VPauseRequest(0x%llX, 0x%llX, 0x%llX, 0x%llX)`", a1, a2, a3, a4);
@@ -40,7 +40,7 @@ DEFINE_HOOK(uint64_t*, VPauseRequest, int64_t a1, uint64_t* a2, int64_t a3, int6
 }
 
 DEFINE_HOOK(BOOL, PostQueuedCompletionStatus, HANDLE CompletionPort, DWORD dwNumBytes, ULONG_PTR dwCompletionKey, LPOVERLAPPED lpOverlapped) {
-	hook_called_callback(hk_PostQueuedCompletionStatus);
+	hook_ui_hook_called_callback(hk_PostQueuedCompletionStatus);
 
 	log_sep();
 	log_msg(LOG_INFO, "Called `bool PostQueuedCompletionStatus(0x%llX, 0x%X, 0x%llX, 0x%llX)`", CompletionPort, dwNumBytes, dwCompletionKey, lpOverlapped);
@@ -55,7 +55,7 @@ DEFINE_HOOK(BOOL, PostQueuedCompletionStatus, HANDLE CompletionPort, DWORD dwNum
 }
 
 DEFINE_HOOK(char, pause, int64_t a1, char a2, int64_t a3) {
-	hook_called_callback(hk_pause);
+	hook_ui_hook_called_callback(hk_pause);
 
 	log_sep();
 	log_msg(LOG_INFO, "Called `char pause(0x%llX, %d, 0x%llX)`", a1, a2, a3);
@@ -70,7 +70,7 @@ DEFINE_HOOK(char, pause, int64_t a1, char a2, int64_t a3) {
 }
 
 DEFINE_HOOK(void, event, int64_t a1, struct _OVERLAPPED* a2) {
-	hook_called_callback(hk_pause);
+	hook_ui_hook_called_callback(hk_pause);
 
 	log_sep();
 	log_msg(LOG_INFO, "Called `void event(0x%llX, 0x%llX)`", a1, a2);

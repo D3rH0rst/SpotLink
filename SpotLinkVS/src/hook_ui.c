@@ -11,12 +11,20 @@
 
 int hook_window_height;
 
+void hook_ui_hook_called_callback(Hook* h) {
+	if (!h) return;
+
+	TCHAR buf[50];
+	_stprintf_s(buf, sizeof(buf) / sizeof(*buf), TEXT("Called %d times"), increment_and_get_hook_called_count(h));
+	SetWindowText(get_hook_data(h), buf);
+}
+
 static inline int ui_create_config_label(HWND hwnd, Hook* h, int* pos_y, int* pos_x, HDC hdc, HFONT hFont) {
 	TCHAR buf[100];
 	int len;
 	SIZE sz;
 	HWND ui_hwnd;
-	len = _sntprintf_s(buf, sizeof(buf) / sizeof(*buf), _TRUNCATE, TEXT("Hook Config `%s`"), h->name);
+	len = _sntprintf_s(buf, sizeof(buf) / sizeof(*buf), _TRUNCATE, TEXT("Hook Config `%s`"), get_hook_name(h));
 	GetTextExtentPoint32(hdc, buf, len, &sz);
 
 	ui_hwnd = CreateWindow(
@@ -65,7 +73,7 @@ static inline int ui_create_called_label(HWND hwnd, Hook* h, int* pos_y, int* po
 
 	SendMessage(ui_hwnd, WM_SETFONT, (WPARAM)hFont, TRUE);
 
-	h->called_count_label = ui_hwnd;
+	set_hook_data(h, ui_hwnd);
 
 	return 0;
 }
@@ -75,7 +83,7 @@ static inline int ui_create_address_labels(HWND hwnd, Hook* h, int* pos_y, int* 
 	SIZE sz;
 	HWND ui_hwnd;
 
-	len = _stprintf_s(buf, sizeof(buf) / sizeof(*buf), TEXT("Hook address: 0x%llX"), h->address);
+	len = _stprintf_s(buf, sizeof(buf) / sizeof(*buf), TEXT("Hook address: 0x%llX"), get_hook_address(h));
 	GetTextExtentPoint32(hdc, buf, len, &sz);
 
 	ui_hwnd = CreateWindow(
@@ -97,7 +105,7 @@ static inline int ui_create_address_labels(HWND hwnd, Hook* h, int* pos_y, int* 
 
 	SendMessage(ui_hwnd, WM_SETFONT, (WPARAM)hFont, TRUE);
 
-	len = _stprintf_s(buf, sizeof(buf) / sizeof(*buf), TEXT("hk_func address: 0x%llX"), (int64_t)h->hk_func);
+	len = _stprintf_s(buf, sizeof(buf) / sizeof(*buf), TEXT("hk_func address: 0x%llX"), (int64_t)get_hook_func(h));
 	GetTextExtentPoint32(hdc, buf, len, &sz);
 
 	ui_hwnd = CreateWindow(
@@ -146,7 +154,7 @@ static inline int ui_create_enable_button(HWND hwnd, Hook* h, int* pos_y, int* p
 	}
 
 	SendMessage(ui_hwnd, WM_SETFONT, (WPARAM)hFont, TRUE);
-	SendMessage(ui_hwnd, BM_SETCHECK, h->enabled, 0);
+	SendMessage(ui_hwnd, BM_SETCHECK, is_hook_enabled(h), 0);
 
 	return 0;
 }

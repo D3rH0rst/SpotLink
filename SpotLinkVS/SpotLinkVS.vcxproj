@@ -202,7 +202,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions);LOGFILE;CONSOLE;</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(SolutionDir)SigScanner\src;$(SolutionDir)Hooking\src;$(MinHookDir)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(SolutionDir)SigScanner\src;$(SolutionDir)Hooking\include;$(MinHookDir)\include</AdditionalIncludeDirectories>
       <UndefinePreprocessorDefinitions>CONSOLE</UndefinePreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -224,7 +224,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions);LOGFILE;CONSOLE;</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(SolutionDir)SigScanner\src;$(SolutionDir)Hooking\src;$(MinHookDir)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(SolutionDir)SigScanner\src;$(SolutionDir)Hooking\include;$(MinHookDir)\include</AdditionalIncludeDirectories>
       <UndefinePreprocessorDefinitions>CONSOLE</UndefinePreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -248,7 +248,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);LOGFILE;CONSOLE;</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(SolutionDir)SigScanner\src;$(SolutionDir)Hooking\src;$(MinHookDir)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(SolutionDir)SigScanner\src;$(SolutionDir)Hooking\include;$(MinHookDir)\include</AdditionalIncludeDirectories>
       <UndefinePreprocessorDefinitions>CONSOLE</UndefinePreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -274,7 +274,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);LOGFILE;CONSOLE;</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(SolutionDir)SigScanner\src;$(SolutionDir)Hooking\src;$(MinHookDir)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(SolutionDir)SigScanner\src;$(SolutionDir)Hooking\include;$(MinHookDir)\include</AdditionalIncludeDirectories>
       <UndefinePreprocessorDefinitions>CONSOLE</UndefinePreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -300,7 +300,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);LOGFILE;CONSOLE;</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(SolutionDir)SigScanner\src;$(SolutionDir)Hooking\src;$(MinHookDir)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(SolutionDir)SigScanner\src;$(SolutionDir)Hooking\include;$(MinHookDir)\include</AdditionalIncludeDirectories>
       <UndefinePreprocessorDefinitions>CONSOLE</UndefinePreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -324,7 +324,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);LOGFILE;CONSOLE;</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(SolutionDir)SigScanner\src;$(SolutionDir)Hooking\src;$(MinHookDir)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(SolutionDir)SigScanner\src;$(SolutionDir)Hooking\include;$(MinHookDir)\include</AdditionalIncludeDirectories>
       <UndefinePreprocessorDefinitions>
       </UndefinePreprocessorDefinitions>
     </ClCompile>
@@ -347,7 +347,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);LOGFILE;CONSOLE;</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(SolutionDir)SigScanner\src;$(SolutionDir)Hooking\src;$(MinHookDir)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(SolutionDir)SigScanner\src;$(SolutionDir)Hooking\include;$(MinHookDir)\include</AdditionalIncludeDirectories>
       <UndefinePreprocessorDefinitions>
       </UndefinePreprocessorDefinitions>
     </ClCompile>
@@ -372,7 +372,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);LOGFILE;CONSOLE;</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(SolutionDir)SigScanner\src;$(SolutionDir)Hooking\src;$(MinHookDir)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(SolutionDir)SigScanner\src;$(SolutionDir)Hooking\include;$(MinHookDir)\include</AdditionalIncludeDirectories>
       <UndefinePreprocessorDefinitions>CONSOLE</UndefinePreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -398,7 +398,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);LOGFILE;CONSOLE;</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(SolutionDir)SigScanner\src;$(SolutionDir)Hooking\src;$(MinHookDir)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(SolutionDir)SigScanner\src;$(SolutionDir)Hooking\include;$(MinHookDir)\include</AdditionalIncludeDirectories>
       <UndefinePreprocessorDefinitions>CONSOLE</UndefinePreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -424,7 +424,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);LOGFILE;CONSOLE;</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(SolutionDir)SigScanner\src;$(SolutionDir)Hooking\src;$(MinHookDir)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)CustomControls\src;$(SolutionDir)SigScanner\src;$(SolutionDir)Hooking\include;$(MinHookDir)\include</AdditionalIncludeDirectories>
       <UndefinePreprocessorDefinitions>CONSOLE</UndefinePreprocessorDefinitions>
     </ClCompile>
     <Link>

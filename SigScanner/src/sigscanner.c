@@ -2,7 +2,20 @@
 #include <Psapi.h>
 #include <string.h>
 
-void(*ssn_log_fn)(const TCHAR*, ...);
+
+void(*ssn_vlog_fn)(const TCHAR*, va_list) = NULL;
+
+void ssn_log_fn(const TCHAR *format, ...) {
+	if (ssn_vlog_fn) {
+		va_list args;
+		va_list args_copy;
+		va_start(args, format);
+		va_copy(args_copy, args);
+		ssn_vlog_fn(format, args_copy);
+		va_end(args_copy);
+		va_end(args);
+	}
+}
 
 static int* generate_pattern_array(const char* pattern, int* array_size) {
 
@@ -11,7 +24,7 @@ static int* generate_pattern_array(const char* pattern, int* array_size) {
 	int* ret = malloc(sizeof(int) * pattern_length);
 	*array_size = 0;
 	if (!ret) {
-		if (ssn_log_fn) ssn_log_fn(TEXT("[ERROR] Failed to allocate memory for pattern arr: %ld"), GetLastError());
+		ssn_log_fn(TEXT("[ERROR] Failed to allocate memory for pattern arr: %ld"), GetLastError());
 		return NULL;
 	}
 
@@ -38,7 +51,7 @@ static int* generate_pattern_array(const char* pattern, int* array_size) {
 			i += 2;
 		}
 		else {
-			if (ssn_log_fn) ssn_log_fn(TEXT("[ERROR] Failed to generate pattern array : Unknown characters 0x%c%c"), pattern[i], pattern[i + 1]);
+			ssn_log_fn(TEXT("[ERROR] Failed to generate pattern array : Unknown characters 0x%c%c"), pattern[i], pattern[i + 1]);
 			free(ret);
 			return NULL;
 		}
@@ -47,8 +60,8 @@ static int* generate_pattern_array(const char* pattern, int* array_size) {
 	return ret;
 }
 
-void sscn_set_log_fn(void(*fn)(const TCHAR *, ...)) {
-	ssn_log_fn = fn;
+void sscn_set_vlog_fn(void(*fn)(const TCHAR *, va_list)) {
+	ssn_vlog_fn = fn;
 }
 
 uint64_t sscn_scan_pattern(HINSTANCE base, const char* pattern) {
@@ -60,7 +73,7 @@ uint64_t sscn_scan_pattern_ex(HINSTANCE base, const char* pattern, int skip_coun
 	MODULEINFO mi;
 
 	if (!GetModuleInformation(GetCurrentProcess(), (HMODULE)base, &mi, sizeof(mi))) {
-		if (ssn_log_fn) ssn_log_fn(TEXT("[ERROR] GetModuleInformation failed: %ld"), GetLastError());
+		ssn_log_fn(TEXT("[ERROR] GetModuleInformation failed: %ld"), GetLastError());
 		return 0;
 	}
 

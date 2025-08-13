@@ -23,7 +23,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\hooking.h">
+    <ClInclude Include="include\hooking.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\hooking_defs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,4 +1,5 @@
 #include "hooking.h"
+#include "hooking_defs.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -25,6 +26,22 @@ size_t func_index;
 FILE* rh_logfile;
 
 void hook_log_fn(const TCHAR *format, ...);
+
+void(*hook_called_callback)(Hook *h) = NULL;
+
+void rh_set_called_callback(void(*fn)(Hook *h)) {
+	hook_called_callback = fn;
+}
+
+void(*print_seperator)(void);
+void rh_set_print_seperator(void(*fn)(void)) {
+	print_seperator = fn;
+}
+
+void(*print_msg)(void);
+void rh_set_log_msg(void(*fn)(void)) {
+	print_msg = fn;
+}
 
 int rh_alloc_new_page(void) {
 	pages[pages_size] = VirtualAlloc(NULL, rh_page_size, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
@@ -54,6 +71,8 @@ int rh_init(void) {
 		hook_log_fn(TEXT("Failed to open rh_log.txt"));
 		return 1;
 	}
+
+	hook_log_fn(TEXT("Successfully initialized runtime hooks"));
 
 	return 0;
 }
@@ -146,6 +165,8 @@ void rh_move_args_to_stack(Hook* h, uint8_t** code_ptr) {
 void rh_call_func(void* func, uint8_t** code_ptr) {
 	*((uint16_t*)(*code_ptr)) = 0xB848;                          // mov rax, 0xADDR
 	(*code_ptr) += sizeof(uint16_t);
+
+	hook_log_fn(TEXT("function addr: 0x%llX"), func);
 
 	*((uint64_t*)(*code_ptr)) = (uint64_t)func;
 	(*code_ptr) += sizeof(uint64_t);
@@ -307,8 +328,9 @@ void rh_print_caller(Hook* h, uint8_t** code_ptr) {
 	rh_call_func(print_caller_addr, code_ptr);
 }
 
-extern void *log_sep; // TODO: Need to rewrite the log call to the normal logging function
-extern void *_log_msg;
+//extern void *log_sep; // TODO: Need to rewrite the log call to the normal logging function
+//extern void *_log_msg;
+//void log_sep(void);
 
 void* make_rh_hk_func(Hook* h) {
 	void* ret_func = (char*)pages[pages_size - 1] + (func_index * RH_FUNC_SIZE);
@@ -334,14 +356,15 @@ void* make_rh_hk_func(Hook* h) {
 
 	rh_move_args_to_stack(h, &code_ptr);
 
+	if (hook_called_callback) {
+		rh_prepare_call_hook_callback(h, &code_ptr);
+		rh_call_func(hook_called_callback, &code_ptr);
+	}
 
-	rh_prepare_call_hook_callback(h, &code_ptr);
-	rh_call_func(hook_called_callback, &code_ptr);
-
-	rh_call_func(log_sep, &code_ptr);
+	rh_call_func(print_seperator, &code_ptr);
 
 	rh_prepare_call_log_msg_first(h, &code_ptr);
-	rh_call_func(_log_msg, &code_ptr);
+	rh_call_func(print_msg, &code_ptr);
 
 	rh_print_caller(h, &code_ptr); 
 
@@ -350,9 +373,9 @@ void* make_rh_hk_func(Hook* h) {
 	rh_save_og_return_val(h, &code_ptr);
 
 	rh_prepare_call_log_msg_second(h, &code_ptr);
-	rh_call_func(_log_msg, &code_ptr);
+	rh_call_func(print_msg, &code_ptr);
 
-	rh_call_func(log_sep, &code_ptr);
+	rh_call_func(print_seperator, &code_ptr);
 
 	rh_function_epilogue(h, &code_ptr);
 
